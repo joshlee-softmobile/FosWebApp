@@ -23,7 +23,14 @@ export class FlightApp extends LitElement {
     this.isDark = true;
     this.refreshTimer = null;
     this.countdownTimer = null;
+    this.pageSwitchTimer = null;
     this.ticker = 0;
+    this.currentPage = 1;
+    this.minRowsPerPage = 3;
+    this.maxRowsPerPage = 20;
+    this.rowHeight = 52;
+    this.tableWrapperHeight = 0;
+    this._cachedReservedHeight = 220;
   }
 
   connectedCallback() {
@@ -31,11 +38,19 @@ export class FlightApp extends LitElement {
 
     this._applyTheme();
 
-    this.vm.fetchData().then(() => this.requestUpdate());
+    this.vm.fetchData().then(() => {
+      this.currentPage = 1;
+      this.requestUpdate();
+    });
 
     this.refreshTimer = setInterval(async () => {
       await this.vm.fetchData();
+      this.vm.isRefreshing = true;
       this.requestUpdate();
+      setTimeout(() => {
+        this.vm.isRefreshing = false;
+        this.requestUpdate();
+      }, 800);
     }, 60000);
 
     this.countdownTimer = setInterval(() => {
@@ -45,14 +60,21 @@ export class FlightApp extends LitElement {
       this.requestUpdate();
     }, 1000);
 
+    this.pageSwitchTimer = setInterval(() => {
+      this._autoFlipPage();
+    }, 12000);
+
     window.addEventListener('hashchange', this._handleHashChange);
+    window.addEventListener('resize', this._handleResize);
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     clearInterval(this.refreshTimer);
     clearInterval(this.countdownTimer);
+    clearInterval(this.pageSwitchTimer);
     window.removeEventListener('hashchange', this._handleHashChange);
+    window.removeEventListener('resize', this._handleResize);
   }
 
   _handleHashChange = () => {
@@ -62,9 +84,73 @@ export class FlightApp extends LitElement {
     } else if (hash.includes('departure')) {
       this.vm.viewType = 'D';
     }
+    this.currentPage = 1;
     this.vm.applyFilters();
     this.requestUpdate();
   };
+
+  _handleResize = () => {
+    this.requestUpdate();
+  };
+
+  _autoFlipPage() {
+    const pageCount = this._getPageCount();
+    if (pageCount <= 1) return;
+    this.currentPage += 1;
+    if (this.currentPage > pageCount) this.currentPage = 1;
+    this.requestUpdate();
+  }
+
+  _getRowsPerPage() {
+    if (typeof window === 'undefined') return 10;
+
+    const reserved = this._cachedReservedHeight || 220;
+    const rowHeight = this.rowHeight || 48;
+    const availableHeight = this.tableWrapperHeight
+      ? Math.max(0, this.tableWrapperHeight)
+      : Math.max(0, window.innerHeight - reserved);
+
+    const possible = Math.max(this.minRowsPerPage, Math.floor(availableHeight / rowHeight));
+    return Math.min(this.maxRowsPerPage, possible);
+  }
+
+  updated(changedProperties) {
+    super.updated(changedProperties);
+
+    if (!this.shadowRoot) return;
+
+    const firstRow = this.shadowRoot.querySelector('.flight-table tbody tr:not([style*="text-align:center"])');
+    if (firstRow) {
+      const height = firstRow.getBoundingClientRect().height;
+      if (height && Math.abs(height - this.rowHeight) > 2) {
+        this.rowHeight = height;
+      }
+    }
+
+    const headerEl = this.shadowRoot.querySelector('header');
+    const configEl = this.shadowRoot.querySelector('.config-row');
+    const pagerEl = this.shadowRoot.querySelector('.pagination-bar');
+    const wrapper = this.shadowRoot.querySelector('.flight-table-wrapper');
+
+    this.tableWrapperHeight = wrapper?.getBoundingClientRect().height || this.tableWrapperHeight;
+
+    this._cachedReservedHeight =
+      (headerEl?.getBoundingClientRect().height || 0)
+      + (configEl?.getBoundingClientRect().height || 0)
+      + (pagerEl?.getBoundingClientRect().height || 0)
+      + 40;
+  }
+
+  _getPageCount() {
+    const rowsPerPage = this._getRowsPerPage();
+    return Math.max(1, Math.ceil(this.vm.filteredFlights.length / rowsPerPage));
+  }
+
+  _setPage(page) {
+    const pageCount = this._getPageCount();
+    this.currentPage = Math.min(Math.max(1, page), pageCount);
+    this.requestUpdate();
+  }
 
   toggleTheme() {
     this.isDark = !this.isDark;
@@ -111,6 +197,8 @@ export class FlightApp extends LitElement {
       --fids-warning: #f59e0b;
       --fids-danger: #ef4444;
       display: block;
+      height: 100vh;
+      overflow: hidden;
       font-family: 'Inter', sans-serif;
       color: var(--fids-text);
       background: var(--fids-bg);
@@ -132,17 +220,18 @@ export class FlightApp extends LitElement {
     .app-container {
       max-width: 1400px;
       margin: 0 auto;
-      padding: 1rem 0.5rem;
+      padding: 0.25rem 0.5rem 0.25rem;
       display: flex;
       flex-direction: column;
-      min-height: 100vh;
+      height: 100%;
       box-sizing: border-box;
+      overflow: hidden;
     }
 
     header {
       position: sticky;
       top: 0;
-      z-index: 20;
+      z-index: 30;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -150,6 +239,18 @@ export class FlightApp extends LitElement {
       background: var(--fids-surface);
       padding: 0.75rem 0.5rem;
       margin: 0;
+    }
+
+    .config-row {
+      position: sticky;
+      top: 60px;
+      z-index: 25;
+    }
+
+    .pagination-bar {
+      position: sticky;
+      bottom: 0;
+      z-index: 25;
     }
 
     h1 {
@@ -166,6 +267,7 @@ export class FlightApp extends LitElement {
       color: var(--fids-dim);
       animation: pulse 2s infinite;
       white-space: nowrap;
+      margin-left: 0.75rem;
     }
 
     .config-row {
@@ -212,6 +314,57 @@ export class FlightApp extends LitElement {
       min-height: 0;
       overflow: auto;
       padding-top: 0.5rem;
+      margin-top: 0.25rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .pagination-bar {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      padding: 0.5rem;
+      border-top: 1px solid rgba(0,0,0,0.08);
+      color: var(--fids-dim);
+      font-size: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      background: var(--fids-surface-2);
+    }
+
+    .pagination-bar button {
+      border: none;
+      background: transparent;
+      color: inherit;
+      padding: 0.25rem 0.45rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .pagination-bar button.active,
+    .pagination-bar button:hover {
+      background: rgba(255,255,255,0.15);
+      color: var(--fids-accent);
+    }
+
+    .pagination-bar span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-weight: 700;
+    }
+
+    .pagination-bar input[type="range"] {
+      flex-grow: 1;
+      margin: 0 0.5rem;
+      max-width: 240px;
+      background: linear-gradient(90deg, var(--fids-accent), var(--fids-accent));
+      cursor: pointer;
+    }
+
+    .pagination-bar button:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
     }
 
     .flight-table {
@@ -239,6 +392,15 @@ export class FlightApp extends LitElement {
       border-bottom: 1px solid rgba(255, 255, 255, 0.08);
       font-size: 0.9rem;
       color: var(--fids-text);
+    }
+
+    .refreshing-row {
+      animation: row-flash 0.5s ease-in-out;
+    }
+
+    @keyframes row-flash {
+      0% { background-color: rgba(59, 130, 246, 0.15); }
+      100% { background-color: transparent; }
     }
 
     :host(.light-theme) .flight-table td {
@@ -310,16 +472,24 @@ export class FlightApp extends LitElement {
     const countdown = this.vm.nextRefreshIn >= 0 ? ` | refresh in ${String(this.vm.nextRefreshIn).padStart(2, '0')}s` : '';
     const lastUpdated = this.vm.lastUpdated ? this.vm.lastUpdated.toLocaleTimeString('zh-TW', { hour12: false }) : 'NEVER';
 
+    const rowsPerPage = this._getRowsPerPage();
+    const pageCount = this._getPageCount();
+    if (this.currentPage > pageCount) {
+      this.currentPage = 1;
+    }
+    const offset = (this.currentPage - 1) * rowsPerPage;
+    const pageFlights = this.vm.filteredFlights.slice(offset, offset + rowsPerPage);
+
     let tableBody;
-    if (this.vm.isLoading) {
+    if (this.vm.isLoading && !this.vm.hasLoaded) {
       tableBody = html`<tr><td colspan="6" style="text-align:center;padding:3rem;color:var(--fids-dim);">Loading flight data…</td></tr>`;
-    } else if (this.vm.error) {
+    } else if (this.vm.error && !this.vm.hasLoaded) {
       tableBody = html`<tr><td colspan="6" style="text-align:center;padding:3rem;color:var(--fids-dim);">Unable to load flight data. ${this.vm.error}</td></tr>`;
     } else if (this.vm.filteredFlights.length === 0) {
       tableBody = html`<tr><td colspan="6" style="text-align:center;padding:3rem;color:var(--fids-dim);">No flights found in this range.</td></tr>`;
     } else {
-      tableBody = this.vm.filteredFlights.map(f => html`
-        <tr>
+      tableBody = pageFlights.map(f => html`
+        <tr class="${this.vm.isRefreshing ? 'refreshing-row' : ''}">
           <td>
             <span class="time">${f.scheduledTime.substring(0,5)}</span>
             ${f.estimatedTime && f.estimatedTime !== f.scheduledTime ? html`<span class="time-actual">EST ${f.estimatedTime.substring(0,5)}</span>` : ''}
@@ -349,7 +519,7 @@ export class FlightApp extends LitElement {
         <header>
           <h1>TPE FIDS</h1>
           <div class="refresh-indicator">
-            ${this.vm.isLoading ? 'UPDATING…' : `LAST UPDATED: ${lastUpdated}${countdown}`}
+            ${this.vm.isLoading ? 'UPDATING…' : this.vm.isRefreshing ? 'AUTO-REFRESHING…' : `LAST UPDATED: ${lastUpdated}${countdown}`}
           </div>
         </header>
 
@@ -387,7 +557,7 @@ export class FlightApp extends LitElement {
           </div>
         </div>
 
-        ${this.vm.error ? html`<sl-alert variant="danger" open closable @sl-after-hide="${() => { this.vm.error = null; this.requestUpdate(); }}" style="margin-bottom:1rem;">
+        ${this.vm.error && !this.vm.hasLoaded ? html`<sl-alert variant="danger" open closable @sl-after-hide="${() => { this.vm.error = null; this.requestUpdate(); }}" style="margin-bottom:1rem;">
             <sl-icon slot="icon" name="exclamation-octagon"></sl-icon>
             ${this.vm.error}
           </sl-alert>` : ''}
@@ -408,6 +578,25 @@ export class FlightApp extends LitElement {
               ${tableBody}
             </tbody>
           </table>
+        </div>
+
+        <div class="pagination-bar" role="navigation" aria-label="flight page navigation">
+          <button @click="${() => this._setPage(1)}" ?disabled="${this.currentPage <= 1}">⏮</button>
+          <button @click="${() => this._setPage(this.currentPage - 1)}" ?disabled="${this.currentPage <= 1}">◀</button>
+
+          <span>Page ${this.currentPage} / ${pageCount}</span>
+
+          <input
+            type="range"
+            min="1"
+            max="${pageCount}"
+            value="${this.currentPage}"
+            @input="${(e) => this._setPage(Number(e.target.value))}"
+            aria-label="Select flight page"
+          />
+
+          <button @click="${() => this._setPage(this.currentPage + 1)}" ?disabled="${this.currentPage >= pageCount}">▶</button>
+          <button @click="${() => this._setPage(pageCount)}" ?disabled="${this.currentPage >= pageCount}">⏭</button>
         </div>
       </div>
     `;

@@ -6,6 +6,7 @@ export class FlightViewModel {
     this.filteredFlights = [];
     this.lastUpdated = null;
     this.isLoading = false;
+    this.isRefreshing = false;
     this.error = null;
     this.hasLoaded = false;
     this.nextRefreshIn = 60;
@@ -27,7 +28,11 @@ export class FlightViewModel {
   }
 
   async fetchData() {
-    this.isLoading = true;
+    if (this.hasLoaded) {
+      this.isRefreshing = true;
+    } else {
+      this.isLoading = true;
+    }
     this.error = null;
     this.nextRefreshIn = 60;
 
@@ -59,11 +64,14 @@ export class FlightViewModel {
 
     if (!success) {
       this.error = `Failed to fetch live data from all available proxies. The airport server might be temporarily blocking requests.`;
-      this.flights = [];
-      this.filteredFlights = [];
+      if (!this.hasLoaded) {
+        this.flights = [];
+        this.filteredFlights = [];
+      }
     }
 
     this.isLoading = false;
+    this.isRefreshing = false;
     this.hasLoaded = true;
     this.applyFilters();
   }
