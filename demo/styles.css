@@ -1,0 +1,181 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto+Mono:wght@500&display=swap');
+
+:root {
+  --fids-bg: #0b0e14;
+  --fids-surface: #1a1f26;
+  --fids-surface-2: #242b35;
+  --fids-text: #ffffff;
+  --fids-accent: #ffcc00; /* Yellow for highlights */
+  --fids-dim: #94a3b8;
+  --fids-success: #10b981;
+  --fids-warning: #f59e0b;
+  --fids-danger: #ef4444;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--fids-bg);
+  color: var(--fids-text);
+  font-family: 'Inter', sans-serif;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* Light Mode Override */
+body.light-theme {
+  --fids-bg: #f8fafc;
+  --fids-surface: #ffffff;
+  --fids-surface-2: #e2e8f0;
+  --fids-text: #0f172a;
+  --fids-dim: #64748b;
+  --fids-accent: #eab308;
+}
+
+.app-container {
+  max-width: 1400px; /* Slightly wider for single-line header */
+  margin: 0 auto;
+  padding: 1rem 0.5rem;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  border-bottom: 1.5px solid var(--fids-accent);
+  padding-bottom: 0.5rem;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--fids-accent);
+}
+
+.controls {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.config-row {
+  position: sticky;
+  top: 60px;
+  z-index: 15;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  background: var(--fids-surface);
+  border-radius: 0 0 4px 4px;
+  padding: 0.25rem 0.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  flex-wrap: wrap;
+}
+
+.flight-table-wrapper {
+  background-color: var(--fids-surface);
+  border-radius: 4px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  flex-grow: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.flight-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+}
+
+.flight-table th {
+  position: sticky;
+  top: 116px;
+  text-align: left;
+  padding: 0.75rem;
+  background-color: var(--fids-surface-2);
+  color: var(--fids-dim);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  z-index: 10;
+}
+
+body.light-theme .flight-table th {
+  background-color: #e2e8f0;
+}
+
+.flight-table td {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.95rem;
+}
+
+body.light-theme .flight-table td {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.flight-number {
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 700;
+  color: var(--fids-accent);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.time {
+  font-family: 'Roboto Mono', monospace;
+}
+
+.time-actual {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--fids-dim);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.status-arrived, .status-ontime { background: rgba(16, 185, 129, 0.2); color: var(--fids-success); }
+.status-delayed, .status-estimated { background: rgba(245, 158, 11, 0.2); color: var(--fids-warning); }
+.status-cancelled { background: rgba(239, 68, 68, 0.2); color: var(--fids-danger); }
+
+.config-panel {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  background: var(--fids-surface);
+  padding: 1rem;
+  border-radius: 8px;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  h1 { font-size: 1.5rem; }
+  .app-container { padding: 1rem 0.5rem; }
+  header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+  .config-panel { flex-direction: column; align-items: stretch; }
+}
+
+/* Animations */
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+.refresh-indicator {
+  font-size: 0.7rem;
+  color: var(--fids-dim);
+  animation: pulse 2s infinite;
+}

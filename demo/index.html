@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TPE Flight Information | 桃園國際機場航班動態</title>
+    <meta name="description" content="桃園國際機場實時航班動態顯示系統 (FIDS)，提供精確的出發與抵達資訊。">
+    
+    <!-- Shoelace Themes -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/themes/dark.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/themes/light.css" />
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Shoelace Scripts -->
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/shoelace-autoloader.js"></script>
+    
+    <!-- App Logic -->
+    <script type="module" src="app.js"></script>
+
+    <style>
+        /* Base styles to prevent FOUC */
+        body { opacity: 0; transition: opacity 0.5s ease-in; }
+        body.loaded { opacity: 1; }
+    </style>
+</head>
+<body class="sl-theme-dark">
+    <div id="root">
+        <flight-app></flight-app>
+    </div>
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            document.body.classList.add('loaded');
+            if (!window.location.hash) {
+                window.location.hash = '#/departure';
+            }
+        });
+    </script>
+</body>
+</html>
