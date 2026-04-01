@@ -11,8 +11,11 @@ export class FlightInfo {
     this.estimatedDate = data[8]?.trim();
     this.estimatedTime = data[9]?.trim();
     this.destinationIATA = data[10]?.trim();
+    this.originIATA = data[10]?.trim();
     this.destinationEN = data[11]?.trim();
+    this.originEN = data[11]?.trim();
     this.destinationZH = data[12]?.trim();
+    this.originZH = data[12]?.trim();
     this.flightStatus = data[13]?.trim();
     this.aircraftType = data[14]?.trim();
     this.viaIATA = data[15]?.trim();

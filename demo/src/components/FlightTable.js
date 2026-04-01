@@ -67,11 +67,10 @@ export class FlightTable extends LitElement {
             <tr>
               <th>Flight</th>
               <th>${this.isDeparture ? 'To' : 'From'}</th>
-              <th>Via</th>
               <th>Time</th>
               <th>Gate</th>
               <th>${this.isDeparture ? 'Counter' : 'Baggage'}</th>
-              <th>Status</th>
+              <th style="width: 24%;">Status</th>
             </tr>
           </thead>
           <tbody>

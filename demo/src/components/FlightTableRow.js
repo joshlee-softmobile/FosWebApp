@@ -37,11 +37,10 @@ export class FlightTableRow extends LitElement {
     return html`
       <tr class="${this.isRefreshing ? 'refreshing-row' : ''}">
         <td><div style="font-weight:700;">${f.fullFlightNumber || '--'}</div><div style="font-size:0.7rem;color:var(--fids-dim);">${f.airlineNameZH || '--'}</div></td>
-        <td>${this.isDeparture ? (f.destinationZH || '--') : (f.originZH || '--')}</td>
         <td>
-          ${f.viaIATA ? html`<div style="font-weight:700">${f.viaIATA}</div>` : ''}
-          ${f.viaEN ? html`<div style="font-size:0.7rem;color:var(--fids-dim);">${f.viaEN}</div>` : ''}
-          ${f.viaZH ? html`<div style="font-size:0.7rem;color:var(--fids-dim);">${f.viaZH}</div>` : ''}
+          <div style="font-weight:700;">${this.isDeparture ? (f.destinationIATA || '--') : (f.originIATA || '--')}</div>
+          <div style="font-size:0.85rem;color:var(--fids-dim);">${this.isDeparture ? (f.destinationEN || '--') : (f.originEN || '--')}</div>
+          <div style="font-size:0.75rem;color:var(--fids-dim);">${this.isDeparture ? (f.destinationZH || '--') : (f.originZH || '--')}</div>
         </td>
         <td>${timeText}${estText}</td>
         <td>${f.gate || '--'}</td>
