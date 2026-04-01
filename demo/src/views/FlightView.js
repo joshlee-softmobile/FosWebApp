@@ -10,11 +10,6 @@ import 'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/compone
 import 'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/components/input/input.js';
 import 'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/components/tooltip/tooltip.js';
 
-import '../components/FlightTable.js';
-import '../components/FlightAlert.js';
-import '../components/FlightConfig.js';
-import '../components/FlightPagination.js';
-
 export class FlightView extends LitElement {
   static properties = {
     vm: { type: Object },
