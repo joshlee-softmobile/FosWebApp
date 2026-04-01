@@ -142,8 +142,9 @@ export class FlightView extends LitElement {
       --fids-warning: #f59e0b;
       --fids-danger: #ef4444;
       display: block;
-      height: 100vh;
-      overflow: hidden;
+      min-height: 100vh;
+      height: auto;
+      overflow: auto;
       font-family: 'Inter', sans-serif;
       color: var(--fids-text);
       background: var(--fids-bg);
@@ -168,9 +169,9 @@ export class FlightView extends LitElement {
       padding: 0.25rem 0.5rem 0.25rem;
       display: flex;
       flex-direction: column;
-      height: 100%;
+      min-height: 100%;
       box-sizing: border-box;
-      overflow: hidden;
+      overflow: visible;
     }
 
     header {
@@ -230,7 +231,7 @@ export class FlightView extends LitElement {
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
       flex-grow: 1;
       min-height: 0;
-      overflow: auto;
+      overflow: visible;
       padding-top: 0.5rem;
       margin-top: 0.25rem;
       margin-bottom: 0.25rem;
@@ -286,15 +287,15 @@ export class FlightView extends LitElement {
         </header>
 
         <flight-config
-          .viewType="${this.vm.viewType}"
-          .startHourOffset="${this.vm.startHourOffset}"
-          .endHourOffset="${this.vm.endHourOffset}"
-          .isDark="${this.isDark}"
-          .compact="${compact}"
-          .flightCount="${this.vm.filteredFlights.length}"
-          @view-changed="${e => { this.vm.setViewType(e.detail); this.currentPage = 1; }}"
-          @range-changed="${e => { this.vm.setRange(e.detail.start, e.detail.end); this.currentPage = 1; }}"
-          @theme-toggle="${this.toggleTheme}"
+          .viewType=${this.vm.viewType}
+          .startHourOffset=${this.vm.startHourOffset}
+          .endHourOffset=${this.vm.endHourOffset}
+          .isDark=${this.isDark}
+          .compact=${compact}
+          .flightCount=${this.vm.filteredFlights.length}
+          @view-changed=${e => { this.vm.setViewType(e.detail); this.currentPage = 1; }}
+          @range-changed=${e => { this.vm.setRange(e.detail.start, e.detail.end); this.currentPage = 1; }}
+          @theme-toggle=${() => this.toggleTheme()}
         ></flight-config>
 
         <flight-alert
