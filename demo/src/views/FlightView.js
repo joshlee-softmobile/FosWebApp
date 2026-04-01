@@ -1,11 +1,6 @@
 import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
 import { FlightViewModel } from './FlightViewModel.js';
 
-import '../components/FlightTable.js';
-import '../components/FlightAlert.js';
-import '../components/FlightConfig.js';
-import '../components/FlightPagination.js';
-
 // Explicitly import Shoelace components for Shadow DOM compatibility
 import 'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/components/select/select.js';
 import 'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/components/option/option.js';
@@ -14,6 +9,11 @@ import 'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/compone
 import 'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/components/alert/alert.js';
 import 'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/components/input/input.js';
 import 'https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.12.0/cdn/components/tooltip/tooltip.js';
+
+import '../components/FlightTable.js';
+import '../components/FlightAlert.js';
+import '../components/FlightConfig.js';
+import '../components/FlightPagination.js';
 
 export class FlightView extends LitElement {
   static properties = {
@@ -295,7 +295,7 @@ export class FlightView extends LitElement {
           .flightCount=${this.vm.filteredFlights.length}
           @view-changed=${e => { this.vm.setViewType(e.detail); this.currentPage = 1; }}
           @range-changed=${e => { this.vm.setRange(e.detail.start, e.detail.end); this.currentPage = 1; }}
-          @theme-toggle=${() => this.toggleTheme()}
+          @theme-toggle=${() => { this.toggleTheme(); }}
         ></flight-config>
 
         <flight-alert

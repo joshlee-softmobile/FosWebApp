@@ -170,9 +170,9 @@ export class FlightConfig extends LitElement {
             .endHourOffset="${this.endHourOffset}"
             .isDark="${this.isDark}"
             .flightCount="${this.flightCount}"
-            @view-changed="${(e) => this._emitViewChange(e, e.detail)}"
-            @range-changed="${(e) => this._emitRangeChange(e.detail)}"
-            @theme-toggle="${() => this._emitThemeToggle()}">
+            @view-changed="${(e) => { e.stopPropagation(); this._emitViewChange(e, e.detail); }}"
+            @range-changed="${(e) => { e.stopPropagation(); this._emitRangeChange(e.detail); }}"
+            @theme-toggle="${(e) => { e.stopPropagation(); this._emitThemeToggle(); }}">
           </flight-config-menu>
         `}
       </div>
