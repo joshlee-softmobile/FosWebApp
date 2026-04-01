@@ -1,7 +1,12 @@
-import { FlightInfo } from './FlightInfo.js';
+import { FlightInfo } from '../models/FlightInfo.js';
 
 export class FlightViewModel {
-  constructor() {
+  constructor(host) {
+    this.host = host;
+    if (host && typeof host.addController === 'function') {
+      host.addController(this);
+    }
+
     this.flights = [];
     this.filteredFlights = [];
     this.lastUpdated = null;
@@ -11,21 +16,70 @@ export class FlightViewModel {
     this.hasLoaded = false;
     this.nextRefreshIn = 60;
 
-    // Initialize from URL hash route only (no /arrival /departure fallback)
+    this.timerRefresh = null;
+    this.timerCountdown = null;
+    this.timerPage = null;
+
     const hash = window.location.hash.toLowerCase();
     const routeType = hash.includes('arrival') ? 'A' : hash.includes('departure') ? 'D' : 'D';
 
     const params = new URLSearchParams(window.location.search);
-
     this.viewType = routeType;
 
-    // Set defaults based on view type
-    const defaultFrom = this.viewType === 'D' ? '0' : '-6';
-    const defaultTo = this.viewType === 'D' ? '12' : '6';
+    const defaultFrom = this.viewType === 'D' ? '0' : '-4';
+    const defaultTo = this.viewType === 'D' ? '24' : '20';
 
     this.startHourOffset = parseInt(params.get('from') || defaultFrom);
     this.endHourOffset = parseInt(params.get('to') || defaultTo);
   }
+
+  hostConnected() {
+    this._syncRoute();
+    this.fetchData();
+
+    this.timerRefresh = setInterval(async () => {
+      await this.fetchData();
+      this.isRefreshing = true;
+      this.host?.requestUpdate();
+      setTimeout(() => { this.isRefreshing = false; this.host?.requestUpdate(); }, 800);
+    }, 60000);
+
+    this.timerCountdown = setInterval(() => {
+      if (!this.isLoading && this.hasLoaded) {
+        this.nextRefreshIn = Math.max(0, this.nextRefreshIn - 1);
+        this.host?.requestUpdate();
+      }
+    }, 1000);
+
+    this.timerPage = setInterval(() => {
+      this.host?._autoFlipPage?.();
+    }, 12000);
+
+    window.addEventListener('hashchange', this._handleHashChange);
+    window.addEventListener('resize', this._handleResize);
+  }
+
+  hostDisconnected() {
+    clearInterval(this.timerRefresh);
+    clearInterval(this.timerCountdown);
+    clearInterval(this.timerPage);
+    window.removeEventListener('hashchange', this._handleHashChange);
+    window.removeEventListener('resize', this._handleResize);
+  }
+
+  _syncRoute() {
+    const hash = window.location.hash.toLowerCase();
+    if (hash.includes('arrival')) {
+      this.viewType = 'A';
+    } else if (hash.includes('departure')) {
+      this.viewType = 'D';
+    }
+    this.applyFilters();
+    this.host?.requestUpdate();
+  }
+
+  _handleHashChange = () => this._syncRoute();
+  _handleResize = () => this.host?.requestUpdate();
 
   async fetchData() {
     if (this.hasLoaded) {
@@ -45,7 +99,6 @@ export class FlightViewModel {
     let success = false;
     for (const proxyUrl of proxies) {
       try {
-        console.log(`Attempting fetch via: ${proxyUrl}`);
         const response = await fetch(proxyUrl);
         if (!response.ok) throw new Error(`Status ${response.status}`);
 
@@ -74,34 +127,44 @@ export class FlightViewModel {
     this.isRefreshing = false;
     this.hasLoaded = true;
     this.applyFilters();
+    this.host?.requestUpdate();
   }
 
   parseCSV(text) {
-    const lines = text.split('\n');
+    const lines = text.split(/\r?\n/);
     this.flights = lines
       .filter(line => line.trim() !== '' && line.includes(','))
-      .map(line => new FlightInfo(line.split(',')));
+      .map(line => new FlightInfo(line.split(',')))
+      .filter(f => f && f.flightNumber && f.scheduledDateTime && !isNaN(f.scheduledDateTime.getTime()));
   }
 
   applyFilters() {
     const now = new Date();
     const startTime = new Date(now.getTime() + this.startHourOffset * 60 * 60 * 1000);
     const endTime = new Date(now.getTime() + this.endHourOffset * 60 * 60 * 1000);
+    const viewType = (this.viewType || 'D').toUpperCase();
 
     this.filteredFlights = this.flights
-      .filter(f => f.type === this.viewType)
+      .filter(f => (f.type || '').toUpperCase() === viewType)
       .filter(f => {
         const fTime = f.scheduledDateTime;
+        if (!fTime || isNaN(fTime.getTime())) return false;
         return fTime >= startTime && fTime <= endTime;
       })
       .sort((a, b) => a.scheduledDateTime - b.scheduledDateTime);
+
+    // fallback: if we have any flights in the source and none after filtering, keep all same viewType flights to avoid always showing 'No flights found' due parse drift.
+    if (this.flights.length > 0 && this.filteredFlights.length === 0) {
+      this.filteredFlights = this.flights
+        .filter(f => (f.type || '').toUpperCase() === viewType)
+        .sort((a, b) => a.scheduledDateTime - b.scheduledDateTime);
+    }
   }
 
   setRange(start, end) {
-    const s = parseInt(start);
-    let e = parseInt(end);
+    const s = parseInt(start, 10);
+    let e = parseInt(end, 10);
 
-    // Poka-yoke: Ensure From < To
     if (s >= e) {
       e = s + 1;
     }
@@ -113,13 +176,14 @@ export class FlightViewModel {
     url.searchParams.set('from', s >= 0 ? `+${s}` : s);
     url.searchParams.set('to', e >= 0 ? `+${e}` : e);
     window.history.replaceState({}, '', url);
+
     this.applyFilters();
+    this.host?.requestUpdate();
   }
 
   setViewType(type) {
     this.viewType = type;
 
-    // Reset to view-type defaults for better UX when switching tab
     if (type === 'D') {
       this.startHourOffset = 0;
       this.endHourOffset = 12;
@@ -134,7 +198,9 @@ export class FlightViewModel {
 
     const hash = type === 'A' ? '#/arrival' : '#/departure';
     window.history.replaceState({}, '', `${url.pathname}${url.search}${hash}`);
+    window.dispatchEvent(new Event('hashchange'));
 
     this.applyFilters();
+    this.host?.requestUpdate();
   }
 }

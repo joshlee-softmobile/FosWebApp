@@ -29,11 +29,12 @@ export class FlightInfo {
   }
 
   get scheduledDateTime() {
+    if (!this.scheduledDate || !this.scheduledTime) return null;
     return new Date(`${this.scheduledDate.replace(/\//g, '-')}T${this.scheduledTime}`);
   }
 
   get estimatedDateTime() {
-    if (!this.estimatedDate) return null;
+    if (!this.estimatedDate || !this.estimatedTime) return null;
     return new Date(`${this.estimatedDate.replace(/\//g, '-')}T${this.estimatedTime}`);
   }
 }
