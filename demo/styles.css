@@ -16,7 +16,7 @@ html, body, #root {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  overflow: auto; /* allow mobile browser UI scroll behavior */
 }
 
 body {

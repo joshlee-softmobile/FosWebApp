@@ -192,18 +192,38 @@ export class FlightView extends LitElement {
       text-transform: uppercase;
       letter-spacing: 1.5px;
       color: var(--fids-accent);
+      flex: 1 1 auto;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .refresh-indicator-wrapper {
+      display: flex;
+      justify-content: flex-end;
+      flex: 0 0 auto;
+      min-width: 0;
+      max-width: 46vw;
+      overflow: hidden;
     }
 
     .refresh-indicator {
+      display: inline-block;
+      min-width: 0;
       font-family: 'Roboto Mono', monospace;
       font-size: 0.85rem;
       color: var(--fids-dim);
       animation: pulse 2s infinite;
-      white-space: nowrap;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      overflow: hidden;
+      text-overflow: ellipsis;
       margin-left: 0.75rem;
+      max-height: 2.6rem;
     }
 
-    /* flight config/style is in flight-config component */
     .flight-table-wrapper {
       background-color: var(--fids-surface);
       border-radius: 4px;
@@ -214,6 +234,9 @@ export class FlightView extends LitElement {
       padding-top: 0.5rem;
       margin-top: 0.25rem;
       margin-bottom: 0.25rem;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-y;
+      overscroll-behavior: auto;
     }
 
     .nav-links a {
@@ -226,18 +249,6 @@ export class FlightView extends LitElement {
     sl-select {
       min-width: 130px;
       max-width: 150px;
-    }
-
-    .flight-table-wrapper {
-      background-color: var(--fids-surface);
-      border-radius: 4px;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-      flex-grow: 1;
-      min-height: 0;
-      overflow: auto;
-      padding-top: 0.5rem;
-      margin-top: 0.25rem;
-      margin-bottom: 0.25rem;
     }
 
     @keyframes pulse {
@@ -267,8 +278,10 @@ export class FlightView extends LitElement {
       <div class="app-container">
         <header>
           <h1>TPE FIDS</h1>
-          <div class="refresh-indicator">
-            ${this.vm.isLoading ? 'UPDATING…' : this.vm.isRefreshing ? 'AUTO-REFRESHING…' : `LAST UPDATED: ${lastUpdated} ${countdown}`}
+          <div class="refresh-indicator-wrapper">
+            <div class="refresh-indicator">
+              ${this.vm.isLoading ? 'UPDATING…' : this.vm.isRefreshing ? 'AUTO-REFRESHING…' : `LAST UPDATED: ${lastUpdated} ${countdown}`}
+            </div>
           </div>
         </header>
 

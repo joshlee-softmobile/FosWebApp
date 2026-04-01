@@ -22,7 +22,12 @@ class FlightConfigMenu extends LitElement {
       backdrop-filter: blur(8px); /* adds glassy depth effect */
       display: flex; flex-direction: column; align-items: stretch; gap: 0.75rem; padding: 0.75rem; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 10px 30px rgba(0,0,0,0.35); border-radius: 8px;
     }
-    .sub-row { display: flex; gap: 0.75rem; align-items: center; width: 100%; }
+    .sub-row { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; width: 100%; }
+    .sub-row sl-input { flex: 1 1 calc(50% - 0.5rem); min-width: 160px; }
+
+    @media (max-width: 520px) {
+      .sub-row sl-input { flex: 1 1 100%; min-width: 0; }
+    }
     
     .nav-links {
       display: flex;
