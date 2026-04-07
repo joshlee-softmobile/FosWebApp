@@ -58,7 +58,7 @@ export class FlightViewModel {
 
     this.timerPage = setInterval(() => {
       this.host?._autoFlipPage?.();
-    }, 12000);
+    }, 9000);
 
     window.addEventListener('hashchange', this._handleHashChange);
     window.addEventListener('resize', this._handleResize);

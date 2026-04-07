@@ -16,7 +16,22 @@ class FlightConfigMenu extends LitElement {
     :host { position: relative; display: block; width: 100%; flex-grow: 1; }
     .menu-header { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; width: 100%; }
     .space-filler { flex: 1 1 auto; }
-    .hamburger { display: inline-flex; background: transparent; border: 1px solid var(--fids-dim); color: var(--fids-text); width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0; justify-content: center; align-items: center; padding: 0; line-height: 1; font-size: 1.12rem; cursor: pointer; }
+    .hamburger { 
+      display: inline-flex; 
+      background: transparent; 
+      border: 1px solid var(--fids-dim); 
+      color: var(--fids-text); 
+      width: 30px; 
+      height: 30px; 
+      border-radius: 8px; 
+      flex-shrink: 0; 
+      justify-content: center; 
+      align-items: center; 
+      padding: 0; 
+      line-height: 1; 
+      font-size: 1.12rem; 
+      cursor: pointer; 
+    }
     .label { font-weight: 700; font-size: 1.1rem; margin-left: 0.75rem; color: var(--fids-accent); }
     .menu-panel { 
       position: absolute;
