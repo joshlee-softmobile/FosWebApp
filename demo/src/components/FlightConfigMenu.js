@@ -7,7 +7,9 @@ class FlightConfigMenu extends LitElement {
     endHourOffset: { type: Number },
     isDark: { type: Boolean },
     flightCount: { type: Number },
-    open: { type: Boolean }
+    open: { type: Boolean },
+    offsetOptions: { type: Array },
+    formatLabel: { type: Function }
   };
 
   static styles = css`
@@ -23,10 +25,10 @@ class FlightConfigMenu extends LitElement {
       display: flex; flex-direction: column; align-items: stretch; gap: 0.75rem; padding: 0.75rem; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 10px 30px rgba(0,0,0,0.35); border-radius: 8px;
     }
     .sub-row { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; width: 100%; }
-    .sub-row sl-input { flex: 1 1 calc(50% - 0.5rem); min-width: 160px; }
+    .sub-row sl-select { flex: 1 1 calc(50% - 0.5rem); min-width: 160px; }
 
     @media (max-width: 520px) {
-      .sub-row sl-input { flex: 1 1 100%; min-width: 0; }
+      .sub-row sl-select { flex: 1 1 100%; min-width: 0; }
     }
     
     .nav-links {
@@ -66,36 +68,18 @@ class FlightConfigMenu extends LitElement {
     this.open = !this.open;
   }
 
-  _offsetToTime(offset) {
-    const now = new Date();
-    const target = new Date(now.getTime() + offset * 60 * 60 * 1000);
-    const h = String(target.getHours()).padStart(2, '0');
-    const m = String(target.getMinutes()).padStart(2, '0');
-    return `${h}:${m}`;
-  }
-
-  _timeToOffset(timeStr) {
-    if (!timeStr) return 0;
-    const [h, m] = timeStr.split(':').map(Number);
-    const now = new Date();
-    const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0);
-    let offset = (target.getTime() - now.getTime()) / (1000 * 60 * 60);
-    if (offset < -12) {
-      offset += 24;
-    } else if (offset > 12) {
-      offset -= 24;
-    }
-    return Math.round(offset * 100) / 100;
-  }
+  // Internal logic removed: parent now handles calculation
 
   _emitViewChange(type) {
     this.dispatchEvent(new CustomEvent('view-changed', { detail: type, bubbles: true, composed: true }));
   }
 
   _emitRangeChange(type, value) {
-    const start = type === 'start' ? this._timeToOffset(value) : this.startHourOffset;
-    const end = type === 'end' ? this._timeToOffset(value) : this.endHourOffset;
-    this.dispatchEvent(new CustomEvent('range-changed', { detail: { start, end }, bubbles: true, composed: true }));
+    this.dispatchEvent(new CustomEvent('range-changed', { 
+      detail: { type, value }, 
+      bubbles: true, 
+      composed: true 
+    }));
   }
 
   _emitThemeToggle() {
@@ -128,12 +112,18 @@ class FlightConfigMenu extends LitElement {
           </nav>
 
           <div class="sub-row">
-            <sl-input type="time" size="small" pill value="${this._offsetToTime(this.startHourOffset)}" @sl-change="${(e) => this._emitRangeChange('start', e.target.value)}" style="flex:1;">
-              <sl-icon name="clock" slot="prefix"></sl-icon>
-            </sl-input>
-            <sl-input type="time" size="small" pill value="${this._offsetToTime(this.endHourOffset)}" @sl-change="${(e) => this._emitRangeChange('end', e.target.value)}" style="flex:1;">
-              <sl-icon name="clock-fill" slot="prefix"></sl-icon>
-            </sl-input>
+            <sl-select size="small" pill value="${this.startHourOffset}" @sl-change="${(e) => this._emitRangeChange('start', e.target.value)}" style="flex:1;">
+              <sl-icon name="clock" slot="prefix" style="color:var(--fids-accent)"></sl-icon>
+              ${(this.offsetOptions || []).map(off => html`
+                <sl-option .value="${off}">${this.formatLabel ? this.formatLabel(off) : off}</sl-option>
+              `)}
+            </sl-select>
+            <sl-select size="small" pill value="${this.endHourOffset}" @sl-change="${(e) => this._emitRangeChange('end', e.target.value)}" style="flex:1;">
+              <sl-icon name="clock-fill" slot="prefix" style="color:var(--fids-accent)"></sl-icon>
+              ${(this.offsetOptions || []).map(off => html`
+                <sl-option .value="${off}">${this.formatLabel ? this.formatLabel(off) : off}</sl-option>
+              `)}
+            </sl-select>
           </div>
         </div>
       ` : html``}

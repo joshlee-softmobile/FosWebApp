@@ -6,7 +6,9 @@ export class FlightConfigTool extends LitElement {
     startHourOffset: { type: Number },
     endHourOffset: { type: Number },
     isDark: { type: Boolean },
-    flightCount: { type: Number }
+    flightCount: { type: Number },
+    offsetOptions: { type: Array },
+    formatLabel: { type: Function }
   };
 
   static styles = css`
@@ -40,9 +42,14 @@ export class FlightConfigTool extends LitElement {
       cursor: pointer;
     }
 
-    sl-input {
-      min-width: 110px;
-      max-width: 130px;
+    sl-select {
+      min-width: 140px;
+      max-width: 180px;
+    }
+
+    sl-select::part(base) {
+      background-color: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.2);
     }
 
     .space-filler { flex: 1 1 auto; }
@@ -55,13 +62,7 @@ export class FlightConfigTool extends LitElement {
     }
   `;
 
-  _offsetToTime(offset) {
-    const now = new Date();
-    const target = new Date(now.getTime() + offset * 60 * 60 * 1000);
-    const h = String(target.getHours()).padStart(2, '0');
-    const m = String(target.getMinutes()).padStart(2, '0');
-    return `${h}:${m}`;
-  }
+  // Internal logic removed: parent now handles calculation
 
   render() {
     return html`
@@ -73,19 +74,25 @@ export class FlightConfigTool extends LitElement {
            style="color:${!this.isDeparture ? 'var(--fids-accent)' : 'var(--fids-dim)'}">ARR</a>
       </nav>
 
-      <sl-input type="time" size="small" pill 
-        value="${this._offsetToTime(this.startHourOffset)}" 
+      <sl-select size="small" pill 
+        value="${this.startHourOffset}" 
         @sl-change="${(e) => this.dispatchEvent(new CustomEvent('range-changed', { detail: { type: 'start', value: e.target.value } }))}">
-        <sl-icon name="clock" slot="prefix"></sl-icon>
-      </sl-input>
+        <sl-icon name="clock" slot="prefix" style="color:var(--fids-accent)"></sl-icon>
+        ${(this.offsetOptions || []).map(off => html`
+          <sl-option .value="${off}">${this.formatLabel ? this.formatLabel(off) : off}</sl-option>
+        `)}
+      </sl-select>
 
       <sl-icon name="arrow-right" style="color:var(--fids-dim);font-size:0.8rem;"></sl-icon>
 
-      <sl-input type="time" size="small" pill 
-        value="${this._offsetToTime(this.endHourOffset)}" 
+      <sl-select size="small" pill 
+        value="${this.endHourOffset}" 
         @sl-change="${(e) => this.dispatchEvent(new CustomEvent('range-changed', { detail: { type: 'end', value: e.target.value } }))}">
-        <sl-icon name="clock-fill" slot="prefix"></sl-icon>
-      </sl-input>
+        <sl-icon name="clock-fill" slot="prefix" style="color:var(--fids-accent)"></sl-icon>
+        ${(this.offsetOptions || []).map(off => html`
+          <sl-option .value="${off}">${this.formatLabel ? this.formatLabel(off) : off}</sl-option>
+        `)}
+      </sl-select>
           
       <div class="space-filler"></div>
       

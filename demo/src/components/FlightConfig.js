@@ -69,28 +69,30 @@ export class FlightConfig extends LitElement {
     this.flightCount = 0;
   }
 
-  _timeToOffset(timeStr) {
-    if (!timeStr) return 0;
-    const [h, m] = timeStr.split(':').map(Number);
+  _getOffsetOptions() {
+    // Curated list of relative hour offsets (from -12 to +24)
+    return [-24, -12, -6, -4, -2, -1, 0, 1, 2, 4, 6, 12, 24];
+  }
+
+  _formatOffsetLabel(offset) {
     const now = new Date();
-    const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0);
-
-    let offset = (target.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-    if (offset < -12) {
-      offset += 24;
-    } else if (offset > 12) {
-      offset -= 24;
-    }
-
-    return Math.round(offset * 100) / 100;
+    const target = new Date(now.getTime() + offset * 60 * 60 * 1000);
+    const timeStr = target.toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
+    
+    let label = offset === 0 ? 'NOW' : (offset > 0 ? `+${offset}h` : `${offset}h`);
+    return `${label} (${timeStr})`;
   }
 
   _emitRangeChange(type, value) {
     let start = this.startHourOffset;
     let end = this.endHourOffset;
-    if (type === 'start') start = this._timeToOffset(value);
-    if (type === 'end') end = this._timeToOffset(value);
+    
+    // value is now the offset directly from the dropdown
+    const offset = parseFloat(value);
+    
+    if (type === 'start') start = offset;
+    if (type === 'end') end = offset;
+    
     this.dispatchEvent(new CustomEvent('range-changed', { detail: { start, end } }));
   }
 
@@ -116,6 +118,8 @@ export class FlightConfig extends LitElement {
             .endHourOffset="${this.endHourOffset}"
             .isDark="${this.isDark}"
             .flightCount="${this.flightCount}"
+            .offsetOptions="${this._getOffsetOptions()}"
+            .formatLabel="${(off) => this._formatOffsetLabel(off)}"
             @view-changed="${(e) => this._emitViewChange(e, e.detail)}"
             @range-changed="${(e) => this._emitRangeChange(e.detail.type, e.detail.value)}"
             @theme-toggle="${() => this._emitThemeToggle()}">
@@ -127,8 +131,10 @@ export class FlightConfig extends LitElement {
             .endHourOffset="${this.endHourOffset}"
             .isDark="${this.isDark}"
             .flightCount="${this.flightCount}"
+            .offsetOptions="${this._getOffsetOptions()}"
+            .formatLabel="${(off) => this._formatOffsetLabel(off)}"
             @view-changed="${(e) => { e.stopPropagation(); this._emitViewChange(e, e.detail); }}"
-            @range-changed="${(e) => { e.stopPropagation(); this._emitRangeChange(e.detail); }}"
+            @range-changed="${(e) => { e.stopPropagation(); this._emitRangeChange(e.detail.type, e.detail.value || e.detail.offset); }}"
             @theme-toggle="${(e) => { e.stopPropagation(); this._emitThemeToggle(); }}">
           </flight-config-menu>
         `}
