@@ -4,19 +4,16 @@ export class FlightTableRow extends LitElement {
   static properties = {
     flight: { type: Object },
     isDeparture: { type: Boolean },
-    isRefreshing: { type: Boolean }
+    isRefreshing: { type: Boolean },
+    rowHeight: { type: Number }
   };
+
+  // Must match FlightView.MIN_ROW_HEIGHT
+  static MIN_ROW_HEIGHT = 64;
 
   createRenderRoot() {
     return this;
   }
-
-  static styles = css`
-    :host { display: contents; }
-    .status-badge { display: inline-block; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.72rem; font-weight: 700; }
-    .refreshing-row { animation: row-flash 0.5s ease-in-out; }
-    @keyframes row-flash { 0% { background: rgba(59,130,246,0.15); } 100% { background: transparent; } }
-  `;
 
   getStatusClass(status) {
     if (!status) return '';
@@ -29,27 +26,75 @@ export class FlightTableRow extends LitElement {
 
   render() {
     const f = this.flight || {};
-    const timeText = f.scheduledTime?.substring(0,5) || '--';
+    // rowHeight is always a floored integer from FlightView._getAdjustedRowHeight().
+    // Clamp to never go below MIN_ROW_HEIGHT for aesthetics.
+    const rh = Math.max(FlightTableRow.MIN_ROW_HEIGHT, this.rowHeight || FlightTableRow.MIN_ROW_HEIGHT);
+    const rhPx = `${rh}px`;
+
+    const timeText = f.scheduledTime?.substring(0, 5) || '--';
     const estText = f.estimatedTime && f.estimatedTime !== f.scheduledTime
-      ? html`<div style="font-size:0.7rem;color:var(--fids-dim);">EST ${f.estimatedTime.substring(0,5)}</div>`
+      ? html`<div style="font-size:0.68rem;color:var(--fids-dim);margin-top:1px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">EST ${f.estimatedTime.substring(0, 5)}</div>`
       : '';
 
+    // Row height is enforced via inline style so content can never expand it.
+    const rowStyle = `height:${rhPx};max-height:${rhPx};overflow:hidden;box-sizing:border-box;`;
+    const cellStyle = `overflow:hidden;white-space:nowrap;text-overflow:ellipsis;vertical-align:middle;height:${rhPx};max-height:${rhPx};padding:0 0.75rem;`;
+
     return html`
-      <tr class="${this.isRefreshing ? 'refreshing-row' : ''}">
-        <td><div style="font-weight:700;">${f.fullFlightNumber || '--'}</div><div style="font-size:0.7rem;color:var(--fids-dim);">${f.airlineNameZH || '--'}</div></td>
-        <td>
-          <div style="font-weight:700;">${this.isDeparture ? (f.destinationIATA || '--') : (f.originIATA || '--')}</div>
-          <div style="font-size:0.85rem;color:var(--fids-dim);">${this.isDeparture ? (f.destinationEN || '--') : (f.originEN || '--')}</div>
-          <div style="font-size:0.75rem;color:var(--fids-dim);">${this.isDeparture ? (f.destinationZH || '--') : (f.originZH || '--')}</div>
+      <tr class="${this.isRefreshing ? 'refreshing-row' : ''}" style="${rowStyle}">
+
+        <!-- Flight number + airline -->
+        <td style="${cellStyle}">
+          <div style="font-weight:700;font-size:0.95rem;letter-spacing:0.5px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${f.fullFlightNumber || '--'}</div>
+          <div style="font-size:0.68rem;color:var(--fids-dim);margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${f.airlineNameZH || ''}</div>
         </td>
-        <td>${timeText}${estText}</td>
-        <td>${f.gate || '--'}</td>
-        <td>${this.isDeparture ? (f.checkInCounter || '--') : (f.baggageCarousel || '--')}</td>
-        <td>
-          <span class="status-badge ${this.getStatusClass(f.flightStatus)}">${f.flightStatus || '--'}</span>
-          ${f.statusEN ? html`<div style="font-size:0.7rem;color:var(--fids-dim);">${f.statusEN}</div>` : ''}
-          ${f.statusZH ? html`<div style="font-size:0.7rem;color:var(--fids-dim);">${f.statusZH}</div>` : ''}
+
+        <!-- Destination / origin -->
+        <td style="${cellStyle}">
+          <div style="font-weight:700;font-size:0.95rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${this.isDeparture ? (f.destinationIATA || '--') : (f.originIATA || '--')}</div>
+          <div style="font-size:0.78rem;color:var(--fids-dim);margin-top:1px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${this.isDeparture ? (f.destinationEN || '') : (f.originEN || '')}</div>
+          <div style="font-size:0.68rem;color:var(--fids-dim);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${this.isDeparture ? (f.destinationZH || '') : (f.originZH || '')}</div>
         </td>
+
+        <!-- Scheduled + estimated time -->
+        <td style="${cellStyle}">
+          <div style="font-weight:700;font-size:0.95rem;font-variant-numeric:tabular-nums;letter-spacing:0.5px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${timeText}</div>
+          ${estText}
+        </td>
+
+        <!-- Gate -->
+        <td style="${cellStyle}">
+          <div style="font-weight:600;font-size:0.9rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${f.gate || '--'}</div>
+        </td>
+
+        <!-- Counter / Baggage -->
+        <td style="${cellStyle}">
+          <div style="font-size:0.88rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${this.isDeparture ? (f.checkInCounter || '--') : (f.baggageCarousel || '--')}</div>
+        </td>
+
+        <!-- Status badge — hard-clipped so it never stretches the row -->
+        <td style="${cellStyle}">
+          <div style="display:flex;align-items:center;height:100%;overflow:hidden;">
+            <span
+              class="status-badge ${this.getStatusClass(f.flightStatus)}"
+              style="
+                display:inline-block;
+                padding:0.25rem 0.55rem;
+                border-radius:5px;
+                font-size:0.72rem;
+                font-weight:700;
+                letter-spacing:0.3px;
+                max-width:100%;
+                overflow:hidden;
+                white-space:nowrap;
+                text-overflow:ellipsis;
+                box-sizing:border-box;
+              ">
+              ${f.flightStatus || '--'}
+            </span>
+          </div>
+        </td>
+
       </tr>
     `;
   }

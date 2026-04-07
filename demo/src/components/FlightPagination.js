@@ -45,6 +45,14 @@ export class FlightPagination extends LitElement {
   }
 
   static styles = css`
+    :host {
+      display: block;
+      flex: 0 0 auto;
+      width: 100%;
+      box-sizing: border-box;
+      z-index: 20;
+    }
+
     .pagination-bar {
       display: flex;
       gap: 0.5rem;

@@ -26,8 +26,8 @@ export class FlightViewModel {
     const params = new URLSearchParams(window.location.search);
     this.viewType = routeType;
 
-    const defaultFrom = this.viewType === 'D' ? '0' : '-4';
-    const defaultTo = this.viewType === 'D' ? '24' : '20';
+    const defaultFrom = this.viewType === 'D' ? '0' : '-12';
+    const defaultTo = this.viewType === 'D' ? '24' : '12';
 
     this.startHourOffset = parseInt(params.get('from') || defaultFrom);
     this.endHourOffset = parseInt(params.get('to') || defaultTo);

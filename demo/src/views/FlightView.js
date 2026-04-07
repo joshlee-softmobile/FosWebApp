@@ -17,6 +17,10 @@ export class FlightView extends LitElement {
     ticker: { type: Number }
   };
 
+  // Minimum aesthetic row height — used as the baseline for row count math.
+  // FlightTableRow will match this as its min-height.
+  static MIN_ROW_HEIGHT = 64;
+
   constructor() {
     super();
     this.vm = new FlightViewModel(this);
@@ -25,15 +29,22 @@ export class FlightView extends LitElement {
     this.currentPage = 1;
     this.minRowsPerPage = 3;
     this.maxRowsPerPage = 20;
-    this.rowHeight = 52;
-    this.tableWrapperHeight = 0;
-    this._cachedReservedHeight = 220;
+    this._tableBodyHeight = 0; // height available for rows (wrapper minus thead)
     this.isCompact = window.innerWidth <= 400;
+    this._resizeObserver = null;
   }
 
   connectedCallback() {
     super.connectedCallback();
     this._applyTheme();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._resizeObserver) {
+      this._resizeObserver.disconnect();
+      this._resizeObserver = null;
+    }
   }
 
   _autoFlipPage() {
@@ -46,39 +57,69 @@ export class FlightView extends LitElement {
 
   _getRowsPerPage() {
     if (typeof window === 'undefined') return 10;
-
-    const reserved = this._cachedReservedHeight || 220;
-    const rowHeight = this.rowHeight || 48;
-    const availableHeight = this.tableWrapperHeight
-      ? Math.max(0, this.tableWrapperHeight)
-      : Math.max(0, window.innerHeight - reserved);
-
-    const possible = Math.max(this.minRowsPerPage, Math.floor(availableHeight / rowHeight));
+    const minRH = FlightView.MIN_ROW_HEIGHT;
+    const bodyHeight = this._tableBodyHeight || 0;
+    if (bodyHeight <= 0) {
+      // Fallback before first measurement: use 65% of viewport
+      return Math.max(this.minRowsPerPage, Math.floor((window.innerHeight * 0.65) / minRH));
+    }
+    // Use floor — but the adjusted row height will stretch rows to fill the gap,
+    // so we never under-count (rows * adjustedRH == bodyHeight exactly).
+    const possible = Math.max(this.minRowsPerPage, Math.floor(bodyHeight / minRH));
     return Math.min(this.maxRowsPerPage, possible);
+  }
+
+  /**
+   * Compute the exact row height that perfectly fills the table body area.
+   * We use a precise (non-floored) value so CSS distributes the space without
+   * leaving a clipped gap at the bottom.
+   */
+  _getAdjustedRowHeight() {
+    const rows = this._getRowsPerPage();
+    if (rows <= 0 || this._tableBodyHeight <= 0) return FlightView.MIN_ROW_HEIGHT;
+    // Floor the per-row height and subtract a 1px safety buffer before dividing.
+    // This ensures rows * height always fits inside the body with no overflow,
+    // preventing the last row from being clipped by FlightPagination.
+    const safeBodyHeight = this._tableBodyHeight - 1;
+    return Math.max(FlightView.MIN_ROW_HEIGHT, Math.floor(safeBodyHeight / rows));
   }
 
   updated(changedProperties) {
     super.updated(changedProperties);
-
     if (!this.shadowRoot) return;
+    this._setupResizeObserver();
+  }
 
-    const firstRow = this.shadowRoot.querySelector('.flight-table tbody tr:not([style*="text-align:center"])');
-    if (firstRow) {
-      const height = firstRow.getBoundingClientRect().height;
-      if (height && Math.abs(height - this.rowHeight) > 2) {
-        this.rowHeight = height;
-      }
+  _setupResizeObserver() {
+    if (this._resizeObserver) return; // already set up
+    const wrapper = this.shadowRoot?.querySelector('.flight-table-wrapper');
+    if (!wrapper) return;
+
+    this._resizeObserver = new ResizeObserver(() => {
+      this._measureTableSizes();
+    });
+    this._resizeObserver.observe(wrapper);
+    this._measureTableSizes();
+  }
+
+  _measureTableSizes() {
+    const wrapper = this.shadowRoot?.querySelector('.flight-table-wrapper');
+    if (!wrapper) return;
+    const wrapperHeight = wrapper.getBoundingClientRect().height;
+
+    // Try to find the thead inside the flight-table shadow root
+    const flightTable = wrapper.querySelector('flight-table');
+    let theadHeight = 0;
+    if (flightTable?.shadowRoot) {
+      const thead = flightTable.shadowRoot.querySelector('thead');
+      if (thead) theadHeight = thead.getBoundingClientRect().height;
     }
 
-    const headerEl = this.shadowRoot.querySelector('header');
-    const wrapper = this.shadowRoot.querySelector('.flight-table-wrapper');
-
-    this.tableWrapperHeight = wrapper?.getBoundingClientRect().height || this.tableWrapperHeight;
-
-    const headerHeight = headerEl?.getBoundingClientRect().height || 0;
-    const controlHeight = 96; // flight-config + flight-pagination estimated fixed height
-
-    this._cachedReservedHeight = headerHeight + controlHeight + 40;
+    const newBodyHeight = Math.max(0, wrapperHeight - theadHeight);
+    if (Math.abs(newBodyHeight - this._tableBodyHeight) > 1) {
+      this._tableBodyHeight = newBodyHeight;
+      this.requestUpdate();
+    }
   }
 
   _getPageCount() {
@@ -136,10 +177,12 @@ export class FlightView extends LitElement {
       --fids-success: #10b981;
       --fids-warning: #f59e0b;
       --fids-danger: #ef4444;
+      --fids-separator: rgba(255, 255, 255, 0.09);
+      /* Lock host to the full viewport — no page scroll */
       display: block;
-      min-height: 100vh;
-      height: auto;
-      overflow: auto;
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
       font-family: 'Inter', sans-serif;
       color: var(--fids-text);
       background: var(--fids-bg);
@@ -152,27 +195,26 @@ export class FlightView extends LitElement {
       --fids-text: #0f172a;
       --fids-dim: #64748b;
       --fids-accent: #eab308;
+      --fids-separator: rgba(0, 0, 0, 0.1);
     }
 
     :not(:defined) {
       visibility: hidden;
     }
 
+    /* Full-height flex column — children stack vertically */
     .app-container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 0.25rem 0.5rem 0.25rem;
       display: flex;
       flex-direction: column;
-      min-height: 100%;
+      height: 100%;
+      width: 100%;
       box-sizing: border-box;
-      overflow: visible;
+      overflow: hidden;
+      padding: 0.25rem 0.5rem;
     }
 
     header {
-      position: sticky;
-      top: 0;
-      z-index: 30;
+      flex: 0 0 auto;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -180,6 +222,7 @@ export class FlightView extends LitElement {
       background: var(--fids-surface);
       padding: 0.75rem 0.5rem;
       margin: 0;
+      z-index: 30;
     }
 
     h1 {
@@ -211,28 +254,45 @@ export class FlightView extends LitElement {
       font-size: 0.85rem;
       color: var(--fids-dim);
       animation: pulse 2s infinite;
-      white-space: normal;
-      word-break: break-word;
-      overflow-wrap: anywhere;
+      white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       margin-left: 0.75rem;
-      max-height: 2.6rem;
     }
 
+    flight-config {
+      flex: 0 0 auto;
+    }
+
+    flight-alert {
+      flex: 0 0 auto;
+    }
+
+    /* The table wrapper fills ALL remaining vertical space */
     .flight-table-wrapper {
+      flex: 1 1 0;
+      min-height: 0;
+      /* Vertical overflow stays locked; horizontal is handled by flight-table internally */
+      overflow: hidden;
       background-color: var(--fids-surface);
       border-radius: 4px;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-      flex-grow: 1;
-      min-height: 0;
-      overflow: visible;
-      padding-top: 0.5rem;
       margin-top: 0.25rem;
       margin-bottom: 0.25rem;
-      -webkit-overflow-scrolling: touch;
-      touch-action: pan-y;
-      overscroll-behavior: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    flight-table {
+      flex: 1 1 0;
+      min-height: 0;
+      /* Do NOT set overflow:hidden here — it would clip flight-table's
+         internal horizontal scroll area in its shadow DOM. */
+      display: block;
+    }
+
+    flight-pagination {
+      flex: 0 0 auto;
     }
 
     .nav-links a {
@@ -268,7 +328,7 @@ export class FlightView extends LitElement {
     const offset = (this.currentPage - 1) * rowsPerPage;
     const pageFlights = /** @type {any[]} */ (this.vm.filteredFlights.slice(offset, offset + rowsPerPage));
     const compact = window.innerWidth <= 640;
-
+    const adjustedRowHeight = this._getAdjustedRowHeight();
 
     return html`
       <div class="app-container">
@@ -304,6 +364,7 @@ export class FlightView extends LitElement {
             .flights=${/** @type {never[]} */ (pageFlights)}
             .isDeparture=${isDeparture}
             .isRefreshing=${this.vm.isRefreshing}
+            .rowHeight=${adjustedRowHeight}
           ></flight-table>
         </div>
 
