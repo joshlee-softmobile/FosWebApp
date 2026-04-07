@@ -26,11 +26,16 @@ export class FlightViewModel {
     const params = new URLSearchParams(window.location.search);
     this.viewType = routeType;
 
-    const defaultFrom = this.viewType === 'D' ? '0' : '-12';
-    const defaultTo = this.viewType === 'D' ? '24' : '12';
+    this.startHourOffset = parseInt(params.get('from') || this.defaultFrom);
+    this.endHourOffset = parseInt(params.get('to') || this.defaultTo);
+  }
 
-    this.startHourOffset = parseInt(params.get('from') || defaultFrom);
-    this.endHourOffset = parseInt(params.get('to') || defaultTo);
+  get defaultFrom() {
+    return this.viewType === 'D' ? '0' : '-12';
+  }
+
+  get defaultTo() {
+    return this.viewType === 'D' ? '24' : '12';
   }
 
   hostConnected() {
@@ -184,13 +189,8 @@ export class FlightViewModel {
   setViewType(type) {
     this.viewType = type;
 
-    if (type === 'D') {
-      this.startHourOffset = 0;
-      this.endHourOffset = 12;
-    } else {
-      this.startHourOffset = -6;
-      this.endHourOffset = 6;
-    }
+    this.startHourOffset = this.defaultFrom;
+    this.endHourOffset = this.defaultTo;
 
     const url = new URL(window.location);
     url.searchParams.set('from', this.startHourOffset >= 0 ? `+${this.startHourOffset}` : this.startHourOffset);

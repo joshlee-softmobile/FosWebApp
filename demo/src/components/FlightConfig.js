@@ -34,27 +34,6 @@ export class FlightConfig extends LitElement {
       width: 100%;
     }
 
-    .nav-links {
-      display: flex;
-      gap: 0.75rem;
-      align-items: center;
-      background: rgba(255,255,255,0.08);
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
-      min-width: 100px;
-    }
-
-    .nav-links a {
-      flex: 1;
-      min-width: 0;
-      text-align: center;
-      text-decoration: none;
-      font-size: 0.85rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      cursor: pointer;
-    }
-
     sl-select {
       min-width: 130px;
       max-width: 150px;
@@ -88,14 +67,6 @@ export class FlightConfig extends LitElement {
     this.isDark = true;
     this.compact = false;
     this.flightCount = 0;
-  }
-
-  _offsetToTime(offset) {
-    const now = new Date();
-    const target = new Date(now.getTime() + offset * 60 * 60 * 1000);
-    const h = String(target.getHours()).padStart(2, '0');
-    const m = String(target.getMinutes()).padStart(2, '0');
-    return `${h}:${m}`;
   }
 
   _timeToOffset(timeStr) {
@@ -139,29 +110,16 @@ export class FlightConfig extends LitElement {
     return html`
       <div class="config-row">
         ${!isMobile ? html`
-          <div class="hidden-tools">
-            <nav class="nav-links">
-              <a @click="${(e) => this._emitViewChange(e, 'D')}" style="color:${isDeparture ? 'var(--fids-accent)' : 'var(--fids-dim)'}">DEP</a>
-              <div style="width:1px;height:12px;background:var(--fids-dim);opacity:0.3;"></div>
-              <a @click="${(e) => this._emitViewChange(e, 'A')}" style="color:${!isDeparture ? 'var(--fids-accent)' : 'var(--fids-dim)'}">ARR</a>
-            </nav>
-          
-            <sl-input type="time" size="small" pill value="${this._offsetToTime(this.startHourOffset)}" @sl-change="${(e) => this._emitRangeChange('start', e.target.value)}" style="min-width:110px; max-width:130px;">
-              <sl-icon name="clock" slot="prefix"></sl-icon>
-            </sl-input>
-
-            <sl-icon name="arrow-right" style="color:var(--fids-dim);font-size:0.8rem;"></sl-icon>
-
-            <sl-input type="time" size="small" pill value="${this._offsetToTime(this.endHourOffset)}" @sl-change="${(e) => this._emitRangeChange('end', e.target.value)}" style="min-width:110px; max-width:130px;">
-              <sl-icon name="clock-fill" slot="prefix"></sl-icon>
-            </sl-input>
-                
-            <div class="space-filler"></div>
-            <div style="text-align:right;color:var(--fids-dim);font-size:0.75rem;font-weight:700;">${this.flightCount} FLIGHTS</div>
-            <sl-button @click="${() => this._emitThemeToggle()}" size="small" circle>
-              <sl-icon name="${this.isDark ? 'sun' : 'moon'}"></sl-icon>
-            </sl-button>
-          </div>
+          <flight-config-tool
+            .isDeparture="${isDeparture}"
+            .startHourOffset="${this.startHourOffset}"
+            .endHourOffset="${this.endHourOffset}"
+            .isDark="${this.isDark}"
+            .flightCount="${this.flightCount}"
+            @view-changed="${(e) => this._emitViewChange(e, e.detail)}"
+            @range-changed="${(e) => this._emitRangeChange(e.detail.type, e.detail.value)}"
+            @theme-toggle="${() => this._emitThemeToggle()}">
+          </flight-config-tool>
         ` : html`
           <flight-config-menu
             .isDeparture="${isDeparture}"

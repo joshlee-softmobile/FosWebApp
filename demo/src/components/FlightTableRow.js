@@ -1,4 +1,5 @@
-import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js';
+import { LitElement, html } from 'https://cdn.jsdelivr.net/npm/lit@3.1.2/+esm';
+import { styleMap } from 'https://cdn.jsdelivr.net/npm/lit@3.1.2/directives/style-map.js/+esm';
 
 export class FlightTableRow extends LitElement {
   static properties = {
@@ -8,115 +9,119 @@ export class FlightTableRow extends LitElement {
     rowHeight: { type: Number }
   };
 
-  // Must match FlightView.MIN_ROW_HEIGHT
   static MIN_ROW_HEIGHT = 64;
 
-  createRenderRoot() {
-    return this;
-  }
+  // Since we are using Light DOM (returning 'this'), static styles won't work.
+  // We use inline styles or expect global CSS for status classes.
+  createRenderRoot() { return this; }
 
-  getStatusClass(status) {
+  /** * Helpers to keep render() clean 
+   */
+  _getStatusClass(status) {
     if (!status) return '';
     const s = status.toLowerCase();
-    if (s.includes('到') || s.includes('arrived') || s.includes('準時') || s.includes('on time')) return 'status-ontime';
-    if (s.includes('誤') || s.includes('delayed') || s.includes('改時間')) return 'status-delayed';
-    if (s.includes('消') || s.includes('cancelled')) return 'status-cancelled';
+    const map = {
+      'status-ontime': ['到', 'arrived', '準時', 'on time'],
+      'status-delayed': ['誤', 'delayed', '改時間'],
+      'status-cancelled': ['消', 'cancelled']
+    };
+    for (const [className, keywords] of Object.entries(map)) {
+      if (keywords.some(k => s.includes(k))) return className;
+    }
     return 'status-estimated';
+  }
+
+  _getDayOffset(scheduledDate) {
+    if (!scheduledDate) return 0;
+    
+    // 1. Create a date object for the flight (handling YYYY/MM/DD or YYYY-MM-DD)
+    // We use replace to ensure compatibility, then set time to midnight local
+    const flightDate = new Date(scheduledDate.replace(/\//g, '-'));
+    flightDate.setHours(0, 0, 0, 0);
+
+    // 2. Create a date object for "today" at midnight local
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // 3. Calculate the difference in milliseconds
+    const diff = flightDate.getTime() - today.getTime();
+    
+    // 4. Return as a signed integer
+    return Math.round(diff / 86400000);
   }
 
   render() {
     const f = this.flight || {};
-    // rowHeight is always a floored integer from FlightView._getAdjustedRowHeight().
-    // Clamp to never go below MIN_ROW_HEIGHT for aesthetics.
     const rh = Math.max(FlightTableRow.MIN_ROW_HEIGHT, this.rowHeight || FlightTableRow.MIN_ROW_HEIGHT);
-    const rhPx = `${rh}px`;
+    
+    // Shared Styles
+    const rowStyles = styleMap({ height: `${rh}px`, maxHeight: `${rh}px`, overflow: 'hidden' });
+    const cellStyles = styleMap({ height: `${rh}px`, maxHeight: `${rh}px` });
+    
+    // Common class for the "Ellipsis Trio" to reduce string size
+    const truncate = "overflow-hidden whitespace-nowrap text-ellipsis";
 
-    const timeText = f.scheduledTime?.substring(0, 5) || '--';
-    const estText = f.estimatedTime && f.estimatedTime !== f.scheduledTime
-      ? html`<div style="font-size:0.68rem;color:#e34234;margin-top:1px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">EST ${f.estimatedTime.substring(0, 5)}</div>`
-      : '';
-
-    // --- Day offset badge (+1 / -1) ---
-    // Compare the flight's scheduled date with today's local calendar date.
-    // We strip time so midnight-boundary cases don't cause off-by-one errors.
-    let dayOffset = 0;
-    if (f.scheduledDate) {
-      const todayStr = new Date().toLocaleDateString('en-CA'); // 'YYYY-MM-DD'
-      const flightStr = f.scheduledDate.replace(/\//g, '-');   // normalise slashes
-      const today   = new Date(todayStr);
-      const flightD = new Date(flightStr);
-      if (!isNaN(flightD)) {
-        dayOffset = Math.round((flightD - today) / 86400000);
-      }
-    }
-    // Format: "+1", "-1", "+2", …  Only shown when non-zero.
-    const dayBadge = dayOffset !== 0 ? html`
-    <sup style="
-      font-size:0.6rem;
-      font-weight:800;
-      line-height:1;
-      vertical-align:sub;
-      margin-left:2px;
-      color:${dayOffset > 0 ? 'var(--fids-warning, #f59e0b)' : 'var(--fids-dim)'};
-      letter-spacing:0;
-    ">${dayOffset > 0 ? '+' : ''}${dayOffset}</sup>` : '';
-
-    // Row height is enforced via inline style so content can never expand it.
-    const rowStyle = `height:${rhPx};max-height:${rhPx};overflow:hidden;box-sizing:border-box;`;
-    const cellStyle = `overflow:hidden;white-space:nowrap;text-overflow:ellipsis;vertical-align:middle;height:${rhPx};max-height:${rhPx};padding:0 0.75rem;`;
+    const dayOffset = this._getDayOffset(f.scheduledDate);
+    const dayBadgeColor = dayOffset !== 0 ? 'var(--fids-warning, #f59e0b)' : 'var(--fids-dim)';
 
     return html`
-      <tr class="${this.isRefreshing ? 'refreshing-row' : ''}" style="${rowStyle}">
+      <style>
+        .fids-cell { padding: 0 0.75rem; vertical-align: middle; }
+        .truncate { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .time-cell { font-variant-numeric: tabular-nums; letter-spacing: 0.5px; }
+      </style>
 
-        <!-- Flight number + airline -->
-        <td style="${cellStyle}">
-          <div style="font-weight:700;font-size:0.95rem;letter-spacing:0.5px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${f.fullFlightNumber || '--'}</div>
-          <div style="font-size:0.68rem;color:var(--fids-dim);margin-top:2px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${f.airlineNameZH || ''}</div>
-        </td>
+      <tr class="${this.isRefreshing ? 'refreshing-row' : ''}" style=${rowStyles}>
 
-        <!-- Destination / origin -->
-        <td style="${cellStyle}">
-          <div style="font-weight:700;font-size:0.95rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${this.isDeparture ? (f.destinationIATA || '--') : (f.originIATA || '--')}</div>
-          <div style="font-size:0.78rem;color:var(--fids-dim);margin-top:1px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${this.isDeparture ? (f.destinationEN || '') : (f.originEN || '')}</div>
-          <div style="font-size:0.68rem;color:var(--fids-dim);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${this.isDeparture ? (f.destinationZH || '') : (f.originZH || '')}</div>
-        </td>
-
-        <!-- Scheduled + estimated time with optional day-offset badge -->
-        <td style="${cellStyle}">
-          <div style="font-weight:700;font-size:0.95rem;font-variant-numeric:tabular-nums;letter-spacing:0.5px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">
-            ${timeText}${dayBadge}
+        <td class="fids-cell" style=${cellStyles}>
+          <div class="truncate" style="font-weight:700; font-size:0.95rem; letter-spacing:0.5px;">
+            ${f.fullFlightNumber || '--'}
           </div>
-          ${estText}
+          <div class="truncate" style="font-size:0.68rem; color:var(--fids-dim); margin-top:2px;">
+            ${f.airlineNameZH || ''}
+          </div>
         </td>
 
-        <!-- Gate -->
-        <td style="${cellStyle}">
-          <div style="font-weight:600;font-size:0.9rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${f.gate || '--'}</div>
+        <td class="fids-cell" style=${cellStyles}>
+          <div class="truncate" style="font-weight:700; font-size:0.95rem;">
+            ${this.isDeparture ? (f.destinationIATA || '--') : (f.originIATA || '--')}
+          </div>
+          <div class="truncate" style="font-size:0.78rem; color:var(--fids-dim); margin-top:1px;">
+            ${this.isDeparture ? f.destinationEN : f.originEN}
+          </div>
+          <div class="truncate" style="font-size:0.68rem; color:var(--fids-dim);">
+            ${this.isDeparture ? f.destinationZH : f.originZH}
+          </div>
         </td>
 
-        <!-- Counter / Baggage -->
-        <td style="${cellStyle}">
-          <div style="font-size:0.88rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${this.isDeparture ? (f.checkInCounter || '--') : (f.baggageCarousel || '--')}</div>
+        <td class="fids-cell time-cell" style=${cellStyles}>
+          <div class="truncate" style="font-weight:700; font-size:0.95rem;">
+            ${f.scheduledTime?.substring(0, 5) || '--'}
+            ${dayOffset !== 0 ? html`
+              <sup style="font-size:0.6rem; font-weight:800; color:${dayBadgeColor};">
+                ${dayOffset > 0 ? '+' : ''}${dayOffset}
+              </sup>` : ''}
+          </div>
+          ${f.estimatedTime && f.estimatedTime !== f.scheduledTime ? html`
+            <div class="truncate" style="font-size:0.68rem; color:#e34234; margin-top:1px;">
+              EST ${f.estimatedTime.substring(0, 5)}
+            </div>` : ''}
         </td>
 
-        <!-- Status badge — hard-clipped so it never stretches the row -->
-        <td style="${cellStyle}">
-          <div style="display:flex;align-items:center;height:100%;overflow:hidden;">
-            <span
-              class="status-badge ${this.getStatusClass(f.flightStatus)}"
-              style="
-                display:inline-block;
-                padding:0.25rem 0.55rem;
-                border-radius:5px;
-                font-size:0.72rem;
-                font-weight:700;
-                letter-spacing:0.3px;
-                max-width:100%;
-                overflow:hidden;
-                white-space:nowrap;
-                text-overflow:ellipsis;
-                box-sizing:border-box;
-              ">
+        <td class="fids-cell" style=${cellStyles}>
+          <div class="truncate" style="font-weight:600; font-size:0.9rem;">${f.gate || '--'}</div>
+        </td>
+
+        <td class="fids-cell" style=${cellStyles}>
+          <div class="truncate" style="font-size:0.88rem;">
+            ${this.isDeparture ? (f.checkInCounter || '--') : (f.baggageCarousel || '--')}
+          </div>
+        </td>
+
+        <td class="fids-cell" style=${cellStyles}>
+          <div style="display:flex; align-items:center; height:100%; overflow:hidden;">
+            <span class="status-badge truncate ${this._getStatusClass(f.flightStatus)}"
+                  style="display:inline-block; padding:0.25rem 0.55rem; border-radius:5px; font-size:0.72rem; font-weight:700;">
               ${f.flightStatus || '--'}
             </span>
           </div>
