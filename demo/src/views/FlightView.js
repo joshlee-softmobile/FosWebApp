@@ -208,9 +208,16 @@ export class FlightView extends LitElement {
       flex-direction: column;
       height: 100%;
       width: 100%;
+      max-width: 1920px;
+      margin: 0 auto;
       box-sizing: border-box;
       overflow: hidden;
       padding: 0.25rem 0.5rem;
+      /* Premium panel effect on large screens */
+      background: var(--fids-bg);
+      border-left: 1px solid var(--fids-separator);
+      border-right: 1px solid var(--fids-separator);
+      box-shadow: 0 0 50px rgba(0,0,0,0.3);
     }
 
     header {
@@ -348,6 +355,7 @@ export class FlightView extends LitElement {
           .endHourOffset=${this.vm.endHourOffset}
           .isDark=${this.isDark}
           .compact=${compact}
+          .isRefreshing=${this.vm.isRefreshing}
           .flightCount=${this.vm.filteredFlights.length}
           @view-changed=${e => { this.vm.setViewType(e.detail); this.currentPage = 1; }}
           @range-changed=${e => { this.vm.setRange(e.detail.start, e.detail.end); this.currentPage = 1; }}

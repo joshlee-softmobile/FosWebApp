@@ -38,14 +38,20 @@ body.light-theme {
 }
 
 .app-container {
-  max-width: 1400px; /* Slightly wider for single-line header */
-  height: 100%;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  width: 100%;
+  max-width: 1920px;
   margin: 0 auto;
-  padding: 1rem 0.5rem;
   box-sizing: border-box;
   overflow: hidden;
+  padding: 0.25rem 0.5rem;
+  /* Premium panel effect on large screens */
+  background: var(--fids-bg);
+  border-left: 1px solid rgba(255,255,255,0.05);
+  border-right: 1px solid rgba(255,255,255,0.05);
+  box-shadow: 0 0 50px rgba(0,0,0,0.3);
 }
 
 header {

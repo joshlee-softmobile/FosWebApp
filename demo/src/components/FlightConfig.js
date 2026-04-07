@@ -8,7 +8,8 @@ export class FlightConfig extends LitElement {
     isDark: { type: Boolean },
     compact: { type: Boolean },
     collapsed: { type: Boolean },
-    flightCount: { type: Number }
+    flightCount: { type: Number },
+    isRefreshing: { type: Boolean }
   };
 
   static styles = css`
@@ -109,35 +110,27 @@ export class FlightConfig extends LitElement {
     const isMobile = this.compact;
     const isDeparture = this.viewType === 'D';
 
+    // Pre-calculate full options (value + label) each render to ensure
+    // the time strings are fresh (especially during Refresh).
+    const options = this._getOffsetOptions().map(off => ({
+      value: off,
+      label: this._formatOffsetLabel(off)
+    }));
+
     return html`
       <div class="config-row">
-        ${!isMobile ? html`
-          <flight-config-tool
+        <flight-config-menu
             .isDeparture="${isDeparture}"
             .startHourOffset="${this.startHourOffset}"
             .endHourOffset="${this.endHourOffset}"
             .isDark="${this.isDark}"
             .flightCount="${this.flightCount}"
-            .offsetOptions="${this._getOffsetOptions()}"
-            .formatLabel="${(off) => this._formatOffsetLabel(off)}"
-            @view-changed="${(e) => this._emitViewChange(e, e.detail)}"
-            @range-changed="${(e) => this._emitRangeChange(e.detail.type, e.detail.value)}"
-            @theme-toggle="${() => this._emitThemeToggle()}">
-          </flight-config-tool>
-        ` : html`
-          <flight-config-menu
-            .isDeparture="${isDeparture}"
-            .startHourOffset="${this.startHourOffset}"
-            .endHourOffset="${this.endHourOffset}"
-            .isDark="${this.isDark}"
-            .flightCount="${this.flightCount}"
-            .offsetOptions="${this._getOffsetOptions()}"
-            .formatLabel="${(off) => this._formatOffsetLabel(off)}"
+            .isRefreshing="${this.isRefreshing}"
+            .options="${options}"
             @view-changed="${(e) => { e.stopPropagation(); this._emitViewChange(e, e.detail); }}"
             @range-changed="${(e) => { e.stopPropagation(); this._emitRangeChange(e.detail.type, e.detail.value || e.detail.offset); }}"
             @theme-toggle="${(e) => { e.stopPropagation(); this._emitThemeToggle(); }}">
           </flight-config-menu>
-        `}
       </div>
     `;
   }

@@ -8,8 +8,8 @@ class FlightConfigMenu extends LitElement {
     isDark: { type: Boolean },
     flightCount: { type: Number },
     open: { type: Boolean },
-    offsetOptions: { type: Array },
-    formatLabel: { type: Function }
+    options: { type: Array },
+    isRefreshing: { type: Boolean }
   };
 
   static styles = css`
@@ -19,15 +19,29 @@ class FlightConfigMenu extends LitElement {
     .hamburger { display: inline-flex; background: transparent; border: 1px solid var(--fids-dim); color: var(--fids-text); width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0; justify-content: center; align-items: center; padding: 0; line-height: 1; font-size: 1.12rem; cursor: pointer; }
     .label { font-weight: 700; font-size: 1.1rem; margin-left: 0.75rem; color: var(--fids-accent); }
     .menu-panel { 
-      position: absolute; top: 100%; left: 0; right: 0; z-index: 25; margin-top: 0.3rem;
-      background: rgba(30, 33, 40, 0.9); /* darker translucent overlay for depth */
-      backdrop-filter: blur(8px); /* adds glassy depth effect */
-      display: flex; flex-direction: column; align-items: stretch; gap: 0.75rem; padding: 0.75rem; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 10px 30px rgba(0,0,0,0.35); border-radius: 8px;
+      position: absolute;
+      top: 100%; 
+      left: 0; 
+      z-index: 25; 
+      margin-top: 0.5rem;
+      width: 100%; 
+      max-width: 440px; 
+      background: rgba(30, 33, 40, 0.9);
+      backdrop-filter: blur(12px); /* stronger blur for more premium feel */
+      display: flex; 
+      flex-direction: column; 
+      align-items: stretch; 
+      gap: 0.75rem; 
+      padding: 0.85rem; 
+      border: 1px solid rgba(255,255,255,0.15); 
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4); 
+      border-radius: 12px;
     }
     .sub-row { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; width: 100%; }
-    .sub-row sl-select { flex: 1 1 calc(50% - 0.5rem); min-width: 160px; }
+    .sub-row sl-select { flex: 1 1 calc(50% - 0.4rem); min-width: 155px; }
 
     @media (max-width: 520px) {
+      .menu-panel { width: calc(100% - 1.5rem); left: 0; right: 0.75rem; }
       .sub-row sl-select { flex: 1 1 100%; min-width: 0; }
     }
     
@@ -75,10 +89,10 @@ class FlightConfigMenu extends LitElement {
   }
 
   _emitRangeChange(type, value) {
-    this.dispatchEvent(new CustomEvent('range-changed', { 
-      detail: { type, value }, 
-      bubbles: true, 
-      composed: true 
+    this.dispatchEvent(new CustomEvent('range-changed', {
+      detail: { type, value },
+      bubbles: true,
+      composed: true
     }));
   }
 
@@ -114,14 +128,14 @@ class FlightConfigMenu extends LitElement {
           <div class="sub-row">
             <sl-select size="small" pill value="${this.startHourOffset}" @sl-change="${(e) => this._emitRangeChange('start', e.target.value)}" style="flex:1;">
               <sl-icon name="clock" slot="prefix" style="color:var(--fids-accent)"></sl-icon>
-              ${(this.offsetOptions || []).map(off => html`
-                <sl-option .value="${off}">${this.formatLabel ? this.formatLabel(off) : off}</sl-option>
+              ${(this.options || []).map(opt => html`
+                <sl-option .value="${opt.value}">${opt.label}</sl-option>
               `)}
             </sl-select>
             <sl-select size="small" pill value="${this.endHourOffset}" @sl-change="${(e) => this._emitRangeChange('end', e.target.value)}" style="flex:1;">
               <sl-icon name="clock-fill" slot="prefix" style="color:var(--fids-accent)"></sl-icon>
-              ${(this.offsetOptions || []).map(off => html`
-                <sl-option .value="${off}">${this.formatLabel ? this.formatLabel(off) : off}</sl-option>
+              ${(this.options || []).map(opt => html`
+                <sl-option .value="${opt.value}">${opt.label}</sl-option>
               `)}
             </sl-select>
           </div>
