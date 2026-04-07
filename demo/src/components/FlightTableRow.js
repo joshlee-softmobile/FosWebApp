@@ -36,6 +36,31 @@ export class FlightTableRow extends LitElement {
       ? html`<div style="font-size:0.68rem;color:var(--fids-dim);margin-top:1px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">EST ${f.estimatedTime.substring(0, 5)}</div>`
       : '';
 
+    // --- Day offset badge (+1 / -1) ---
+    // Compare the flight's scheduled date with today's local calendar date.
+    // We strip time so midnight-boundary cases don't cause off-by-one errors.
+    let dayOffset = 0;
+    if (f.scheduledDate) {
+      const todayStr = new Date().toLocaleDateString('en-CA'); // 'YYYY-MM-DD'
+      const flightStr = f.scheduledDate.replace(/\//g, '-');   // normalise slashes
+      const today   = new Date(todayStr);
+      const flightD = new Date(flightStr);
+      if (!isNaN(flightD)) {
+        dayOffset = Math.round((flightD - today) / 86400000);
+      }
+    }
+    // Format: "+1", "-1", "+2", …  Only shown when non-zero.
+    const dayBadge = dayOffset !== 0 ? html`
+    <sup style="
+      font-size:0.6rem;
+      font-weight:800;
+      line-height:1;
+      vertical-align:sub;
+      margin-left:2px;
+      color:${dayOffset > 0 ? 'var(--fids-warning, #f59e0b)' : 'var(--fids-dim)'};
+      letter-spacing:0;
+    ">${dayOffset > 0 ? '+' : ''}${dayOffset}</sup>` : '';
+
     // Row height is enforced via inline style so content can never expand it.
     const rowStyle = `height:${rhPx};max-height:${rhPx};overflow:hidden;box-sizing:border-box;`;
     const cellStyle = `overflow:hidden;white-space:nowrap;text-overflow:ellipsis;vertical-align:middle;height:${rhPx};max-height:${rhPx};padding:0 0.75rem;`;
@@ -56,9 +81,11 @@ export class FlightTableRow extends LitElement {
           <div style="font-size:0.68rem;color:var(--fids-dim);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${this.isDeparture ? (f.destinationZH || '') : (f.originZH || '')}</div>
         </td>
 
-        <!-- Scheduled + estimated time -->
+        <!-- Scheduled + estimated time with optional day-offset badge -->
         <td style="${cellStyle}">
-          <div style="font-weight:700;font-size:0.95rem;font-variant-numeric:tabular-nums;letter-spacing:0.5px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${timeText}</div>
+          <div style="font-weight:700;font-size:0.95rem;font-variant-numeric:tabular-nums;letter-spacing:0.5px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">
+            ${timeText}${dayBadge}
+          </div>
           ${estText}
         </td>
 
