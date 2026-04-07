@@ -33,7 +33,7 @@ export class FlightTableRow extends LitElement {
 
     const timeText = f.scheduledTime?.substring(0, 5) || '--';
     const estText = f.estimatedTime && f.estimatedTime !== f.scheduledTime
-      ? html`<div style="font-size:0.68rem;color:var(--fids-dim);margin-top:1px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">EST ${f.estimatedTime.substring(0, 5)}</div>`
+      ? html`<div style="font-size:0.68rem;color:#e34234;margin-top:1px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">EST ${f.estimatedTime.substring(0, 5)}</div>`
       : '';
 
     // --- Day offset badge (+1 / -1) ---
