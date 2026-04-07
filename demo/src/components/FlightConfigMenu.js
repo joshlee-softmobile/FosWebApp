@@ -26,15 +26,16 @@ class FlightConfigMenu extends LitElement {
       margin-top: 0.5rem;
       width: 100%; 
       max-width: 440px; 
-      background: rgba(30, 33, 40, 0.9);
-      backdrop-filter: blur(12px); /* stronger blur for more premium feel */
+      /* Clean theme-aware background using color-mix for premium translucency */
+      background: color-mix(in srgb, var(--fids-surface), transparent 10%);
+      backdrop-filter: blur(16px);
       display: flex; 
       flex-direction: column; 
       align-items: stretch; 
-      gap: 0.75rem; 
-      padding: 0.85rem; 
-      border: 1px solid rgba(255,255,255,0.15); 
-      box-shadow: 0 10px 40px rgba(0,0,0,0.4); 
+      gap: 0.85rem; 
+      padding: 1rem; 
+      border: 1px solid var(--fids-separator); 
+      box-shadow: 0 15px 45px rgba(0, 0, 0, 0.4); 
       border-radius: 12px;
     }
     .sub-row { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; width: 100%; }
@@ -50,9 +51,9 @@ class FlightConfigMenu extends LitElement {
       gap: 0.75rem;
       align-items: center;
       justify-content: center;
-      background: rgba(255,255,255,0.08);
-      padding: 0.25rem 0.5rem;
-      border-radius: 4px;
+      background: var(--fids-surface-2);
+      padding: 0.35rem 0.5rem;
+      border-radius: 6px;
       min-width: 100px;
     }
     .nav-links a {
