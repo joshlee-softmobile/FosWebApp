@@ -31,11 +31,11 @@ export class FlightViewModel {
   }
 
   get defaultFrom() {
-    return this.viewType === 'D' ? '0' : '-12';
+    return this.viewType === 'D' ? '0' : '-2';
   }
 
   get defaultTo() {
-    return this.viewType === 'D' ? '24' : '12';
+    return this.viewType === 'D' ? '6' : '4';
   }
 
   hostConnected() {
