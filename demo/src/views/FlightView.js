@@ -239,25 +239,23 @@ export class FlightView extends LitElement {
     }
 
     .refresh-indicator-wrapper {
-      display: flex;
-      justify-content: flex-end;
-      flex: 0 0 auto;
+      /* flex: 0 1 auto lets the wrapper shrink if h1 needs more room */
+      flex: 0 1 auto;
       min-width: 0;
-      max-width: 46vw;
+      display: flex;
+      align-items: center;
       overflow: hidden;
+      margin-left: 0.5rem;
     }
 
     .refresh-indicator {
-      display: inline-block;
-      min-width: 0;
       font-family: 'Roboto Mono', monospace;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       color: var(--fids-dim);
       animation: pulse 2s infinite;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      margin-left: 0.75rem;
     }
 
     flight-config {
@@ -317,7 +315,7 @@ export class FlightView extends LitElement {
   render() {
     const isDeparture = this.vm.viewType === 'D';
 
-    const countdown = this.vm.nextRefreshIn >= 0 ? `IN ${String(this.vm.nextRefreshIn).padStart(2, '0')}s` : '';
+    const countdown = this.vm.nextRefreshIn >= 0 ? `${String(this.vm.nextRefreshIn).padStart(2, '0')}s` : '';
     const lastUpdated = this.vm.lastUpdated ? this.vm.lastUpdated.toLocaleTimeString('zh-TW', { hour12: false }) : 'NEVER';
 
     const rowsPerPage = this._getRowsPerPage();
@@ -335,9 +333,12 @@ export class FlightView extends LitElement {
         <header>
           <h1>TPE FIDS</h1>
           <div class="refresh-indicator-wrapper">
-            <div class="refresh-indicator">
-              ${this.vm.isLoading ? 'UPDATING…' : this.vm.isRefreshing ? 'AUTO-REFRESHING…' : `LAST UPDATED: ${lastUpdated} ${countdown}`}
-            </div>
+            <div class="refresh-indicator">${
+              this.vm.isLoading   ? (compact ? '⋯' : 'UPDATING…') :
+              this.vm.isRefreshing ? (compact ? '↻' : 'AUTO-REFRESHING…') :
+              compact             ? `${lastUpdated}｜${countdown}`
+                                  : `UPDATED: ${lastUpdated} IN ${countdown}`
+            }</div>
           </div>
         </header>
 
