@@ -15,6 +15,7 @@ export class FlightViewModel {
     this.error = null;
     this.hasLoaded = false;
     this.nextRefreshIn = 60;
+    this.isAutoFlipEnabled = true;
 
     this.timerRefresh = null;
     this.timerCountdown = null;
@@ -57,8 +58,10 @@ export class FlightViewModel {
     }, 1000);
 
     this.timerPage = setInterval(() => {
-      this.host?._autoFlipPage?.();
-    }, 9000);
+      if (this.isAutoFlipEnabled) {
+        this.host?._autoFlipPage?.();
+      }
+    }, 9999);
 
     window.addEventListener('hashchange', this._handleHashChange);
     window.addEventListener('resize', this._handleResize);
@@ -201,6 +204,11 @@ export class FlightViewModel {
     window.dispatchEvent(new Event('hashchange'));
 
     this.applyFilters();
+    this.host?.requestUpdate();
+  }
+
+  toggleAutoFlip() {
+    this.isAutoFlipEnabled = !this.isAutoFlipEnabled;
     this.host?.requestUpdate();
   }
 }

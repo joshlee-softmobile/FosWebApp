@@ -3,19 +3,28 @@ import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@3/co
 export class FlightPagination extends LitElement {
   static properties = {
     currentPage: { type: Number },
-    pageCount: { type: Number }
+    pageCount: { type: Number },
+    isAutoFlipEnabled: { type: Boolean }
   };
 
   constructor() {
     super();
     this.currentPage = 1;
     this.pageCount = 1;
+    this.isAutoFlipEnabled = true;
   }
 
   _emitPage(page) {
     const normalized = Math.min(Math.max(1, page), Math.max(1, this.pageCount));
     this.dispatchEvent(new CustomEvent('page-changed', {
       detail: { page: normalized },
+      bubbles: true,
+      composed: true
+    }));
+  }
+
+  _toggleAutoFlip() {
+    this.dispatchEvent(new CustomEvent('autoflip-toggle', {
       bubbles: true,
       composed: true
     }));
@@ -40,6 +49,12 @@ export class FlightPagination extends LitElement {
 
         <button @click="${() => this._emitPage(this.currentPage + 1)}" ?disabled="${this.currentPage >= pageCount}">▶</button>
         <button @click="${() => this._emitPage(pageCount)}" ?disabled="${this.currentPage >= pageCount}">⏭</button>
+
+        <div class="divider"></div>
+
+        <button @click="${this._toggleAutoFlip}" class="autoflip-btn ${this.isAutoFlipEnabled ? 'active' : ''}" title="${this.isAutoFlipEnabled ? 'Pause Auto-flip' : 'Start Auto-flip'}">
+          ${this.isAutoFlipEnabled ? html`⏸ <small>PAUSE</small>` : html`▶ <small>AUTO</small>`}
+        </button>
       </div>
     `;
   }
@@ -101,6 +116,53 @@ export class FlightPagination extends LitElement {
       cursor: pointer;
     }
 
+    .divider {
+      width: 1px;
+      height: 20px;
+      background: var(--fids-separator);
+      margin: 0 0.25rem;
+    }
+
+    .autoflip-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0.6rem !important;
+      border: 1px solid transparent !important;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+      opacity: 0.5;
+      filter: grayscale(0.8);
+      color: var(--fids-dim) !important;
+    }
+
+    .autoflip-btn:hover {
+      opacity: 1;
+      filter: grayscale(0);
+      color: var(--fids-text) !important;
+      border-color: var(--fids-separator) !important;
+      background: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    .autoflip-btn small {
+      font-size: 0.6rem;
+      letter-spacing: 0.5px;
+    }
+
+    .autoflip-btn.active {
+      opacity: 0.7;
+      filter: grayscale(0.2);
+      color: var(--fids-accent) !important;
+      border-color: rgba(255, 204, 0, 0.2) !important;
+    }
+
+    .autoflip-btn.active:hover {
+      opacity: 1;
+      filter: grayscale(0);
+      border-color: var(--fids-accent) !important;
+      background: rgba(255, 204, 0, 0.1) !important;
+    }
+
     .pagination-bar button:disabled {
       opacity: 0.35;
       cursor: not-allowed;
@@ -113,7 +175,10 @@ export class FlightPagination extends LitElement {
         padding: 0.35rem;
       }
       .pagination-bar span { display: none; }
-      .pagination-bar input[type="range"] { max-width: 120px; }
+      .pagination-bar input[type="range"] { max-width: 100px; }
+      .autoflip-btn small { display: none; }
+      .autoflip-btn { padding: 0.25rem 0.4rem !important; }
+      .divider { margin: 0 0.1rem; }
     }
   `;
 }

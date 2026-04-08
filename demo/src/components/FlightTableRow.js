@@ -120,8 +120,7 @@ export class FlightTableRow extends LitElement {
 
         <td class="fids-cell" style=${cellStyles}>
           <div style="display:flex; align-items:center; height:100%; overflow:hidden;">
-            <span class="status-badge truncate ${this._getStatusClass(f.flightStatus)}"
-                  style="display:inline-block; padding:0.25rem 0.55rem; border-radius:5px; font-size:0.72rem; font-weight:700;">
+            <span class="status-badge truncate ${this._getStatusClass(f.flightStatus)}">
               ${f.flightStatus || '--'}
             </span>
           </div>

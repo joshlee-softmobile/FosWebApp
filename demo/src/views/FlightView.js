@@ -380,7 +380,9 @@ export class FlightView extends LitElement {
         <flight-pagination
           .currentPage=${this.currentPage}
           .pageCount=${pageCount}
+          .isAutoFlipEnabled=${this.vm.isAutoFlipEnabled}
           @page-changed=${(e) => this._setPage(Number(e.detail.page))}
+          @autoflip-toggle=${() => this.vm.toggleAutoFlip()}
         ></flight-pagination>
       </div>
     `;
