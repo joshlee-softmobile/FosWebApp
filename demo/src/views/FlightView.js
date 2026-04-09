@@ -349,7 +349,7 @@ export class FlightView extends LitElement {
           </div>
         </header>
 
-        <flight-config
+        <flight-selection
           .viewType=${this.vm.viewType}
           .startHourOffset=${this.vm.startHourOffset}
           .endHourOffset=${this.vm.endHourOffset}
@@ -360,7 +360,7 @@ export class FlightView extends LitElement {
           @view-changed=${e => { this.vm.setViewType(e.detail); this.currentPage = 1; }}
           @range-changed=${e => { this.vm.setRange(e.detail.start, e.detail.end); this.currentPage = 1; }}
           @theme-toggle=${() => { this.toggleTheme(); }}
-        ></flight-config>
+        ></flight-selection>
 
         <flight-alert
           .message=${this.vm.error || ''}
