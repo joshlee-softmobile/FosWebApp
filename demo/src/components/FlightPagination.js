@@ -53,7 +53,7 @@ export class FlightPagination extends LitElement {
         <div class="divider"></div>
 
         <button @click="${this._toggleAutoFlip}" class="autoflip-btn ${this.isAutoFlipEnabled ? 'active' : ''}" title="${this.isAutoFlipEnabled ? 'Pause Auto-flip' : 'Start Auto-flip'}">
-          ${this.isAutoFlipEnabled ? html`⏸ <small>PAUSE</small>` : html`▶ <small>AUTO</small>`}
+          ${this.isAutoFlipEnabled ? html`⏸` : html`▶`}
         </button>
       </div>
     `;
@@ -84,18 +84,33 @@ export class FlightPagination extends LitElement {
     }
 
     .pagination-bar button {
-      border: none;
-      background: transparent;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.05);
       color: inherit;
-      padding: 0.25rem 0.45rem;
-      border-radius: 4px;
+      border-radius: 6px;
       cursor: pointer;
       font-weight: 700;
+      font-size: 1.1rem;
+      line-height: 1;
+      transition: all 0.2s ease;
+      padding: 0;
+      flex-shrink: 0;
     }
 
-    .pagination-bar button.active,
-    .pagination-bar button:hover {
+    .pagination-bar button:hover:not(:disabled) {
       background: rgba(255,255,255,0.15);
+      color: var(--fids-accent);
+      border-color: var(--fids-accent);
+      transform: scale(1.1);
+    }
+
+    .pagination-bar button.active {
+      background: rgba(255,255,255,0.2);
       color: var(--fids-accent);
     }
 
@@ -126,9 +141,12 @@ export class FlightPagination extends LitElement {
     .autoflip-btn {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 0.4rem;
-      padding: 0.25rem 0.6rem !important;
-      border: 1px solid transparent !important;
+      padding: 0 1rem !important;
+      height: 32px;
+      border-radius: 6px !important;
+      border: 1px solid rgba(255,255,255,0.1) !important;
       transition: all 0.3s ease;
       white-space: nowrap;
       opacity: 0.5;
@@ -174,10 +192,20 @@ export class FlightPagination extends LitElement {
         gap: 0.3rem;
         padding: 0.35rem;
       }
+      .pagination-bar button {
+        width: 28px;
+        height: 28px;
+        font-size: 0.9rem;
+      }
       .pagination-bar span { display: none; }
       .pagination-bar input[type="range"] { max-width: 100px; }
       .autoflip-btn small { display: none; }
-      .autoflip-btn { padding: 0.25rem 0.4rem !important; }
+      .autoflip-btn { 
+        width: 28px; 
+        height: 28px; 
+        padding: 0 !important; 
+        border-radius: 6px !important;
+      }
       .divider { margin: 0 0.1rem; }
     }
   `;
