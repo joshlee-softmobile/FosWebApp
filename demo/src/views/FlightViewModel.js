@@ -42,12 +42,16 @@ export class FlightViewModel {
   hostConnected() {
     this._syncRoute();
     this.fetchData();
+    this.lastHiddenTime = 0;
 
     this.timerRefresh = setInterval(async () => {
       await this.fetchData();
       this.isRefreshing = true;
       this.host?.requestUpdate();
-      setTimeout(() => { this.isRefreshing = false; this.host?.requestUpdate(); }, 800);
+      setTimeout(() => { 
+        this.isRefreshing = false; 
+        this.host?.requestUpdate(); 
+      }, 800);
     }, 60000);
 
     this.timerCountdown = setInterval(() => {
@@ -65,6 +69,7 @@ export class FlightViewModel {
 
     window.addEventListener('hashchange', this._handleHashChange);
     window.addEventListener('resize', this._handleResize);
+    document.addEventListener('visibilitychange', this._handleVisibilityChange);
   }
 
   hostDisconnected() {
@@ -73,7 +78,25 @@ export class FlightViewModel {
     clearInterval(this.timerPage);
     window.removeEventListener('hashchange', this._handleHashChange);
     window.removeEventListener('resize', this._handleResize);
+    document.removeEventListener('visibilitychange', this._handleVisibilityChange);
   }
+
+  _handleHashChange = () => this._syncRoute();
+  _handleResize = () => this.host?.requestUpdate();
+
+  _handleVisibilityChange = () => {
+    if (document.visibilityState === 'hidden') {
+      // Record the exact time the app goes into the background
+      this.lastHiddenTime = Date.now();
+    } else if (document.visibilityState === 'visible') {
+      // When coming back, check how long it was hidden
+      // Only refresh if it was hidden for more than 1 hour (3600000 ms)
+      if (this.lastHiddenTime > 0 && Date.now() - this.lastHiddenTime >= 3600000) {
+        this.fetchData();
+        this.nextRefreshIn = 60;
+      }
+    }
+  };
 
   _syncRoute() {
     const hash = window.location.hash.toLowerCase();
@@ -85,9 +108,6 @@ export class FlightViewModel {
     this.applyFilters();
     this.host?.requestUpdate();
   }
-
-  _handleHashChange = () => this._syncRoute();
-  _handleResize = () => this.host?.requestUpdate();
 
   async fetchData() {
     if (this.hasLoaded) {
